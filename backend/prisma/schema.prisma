@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String      @id @default(uuid())
+  email           String      @unique
+  clerkId         String      @unique
+  subscriptionTier String     @default("free") // "free" | "pro"
+  credits         Int         @default(3)
+  createdAt       DateTime    @default(now())
+  interviews      Interview[]
+}
+
+model Interview {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  type       String    // "trivia" | "system-design"
+  topic      String?   // "Java", "Python", "General"
+  duration   Int       // seconds
+  score      Float?
+  createdAt  DateTime  @default(now())
+  messages   Message[]
+  feedback   Feedback?
+}
+
+model Message {
+  id          String    @id @default(uuid())
+  interviewId String
+  interview   Interview @relation(fields: [interviewId], references: [id])
+  role        String    // "ai" | "user"
+  content     String
+  timestamp   DateTime  @default(now())
+}
+
+model Feedback {
+  id                String    @id @default(uuid())
+  interviewId       String    @unique
+  interview         Interview @relation(fields: [interviewId], references: [id])
+  overallScore      Float
+  overallFeedback   String
+  areasToImprove    String[]
+  strengths         String[]
+  detailedAnalysis  Json      // per-question breakdown
+  createdAt         DateTime  @default(now())
+}
