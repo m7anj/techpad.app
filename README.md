@@ -1,4 +1,4 @@
-# TechTrivia
+# techprep.io
 
 AI-powered voice interview practice for technical roles. Have real-time spoken conversations with an AI interviewer that asks follow-up questions and provides detailed feedback.
 
@@ -38,3 +38,4 @@ No typing, no code editor - just talking through concepts like a real interview.
 - Stripe
 
 Built to simulate real interview pressure without booking expensive mock sessions. Coding jesus charges too much.
+
