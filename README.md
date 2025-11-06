@@ -19,11 +19,22 @@ No typing, no code editor - just talking through concepts like a real interview.
 
 ## Tech Stack
 
-**Frontend**: React + Vite + TypeScript + CSS Modules
-**Backend**: Express + TypeScript + Prisma
-**Database**: PostgreSQL
-**AI**: Claude API (conversation) + OpenAI TTS (voice)
-**Auth**: Clerk
-**Payments**: Stripe
+**Frontend**: 
+- React
+- Vite
 
-Built to simulate real interview pressure without booking expensive mock sessions.
+**Backend**: 
+- Express
+- Prisma
+  
+**Database**: 
+- PostgreSQL
+**AI**:
+- Claude API (conversation)
+- OpenAI TTS (voice)
+**Auth**:
+- Clerk
+**Payments**:
+- Stripe
+
+Built to simulate real interview pressure without booking expensive mock sessions. Coding jesus charges too much.
