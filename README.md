@@ -29,11 +29,14 @@ No typing, no code editor - just talking through concepts like a real interview.
   
 **Database**: 
 - PostgreSQL
+
 **AI**:
 - Claude API (conversation)
 - OpenAI TTS (voice)
+
 **Auth**:
 - Clerk
+
 **Payments**:
 - Stripe
 
