@@ -28,7 +28,7 @@ No typing, no code editor - just talking through concepts like a real interview.
 - Prisma
   
 **Database**: 
-- PostgreSQL
+- PostgreSQL (Supabase)
 
 **AI**:
 - Claude API (conversation)
