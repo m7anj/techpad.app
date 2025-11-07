@@ -1,9 +1,6 @@
 import express from 'express';
-
 const router = express.Router();
-
 router.get('/', (req, res) => {
-    res.send('Pricing information!')
+    res.send('These are interviews you have completed!');
 });
-
 export default router;

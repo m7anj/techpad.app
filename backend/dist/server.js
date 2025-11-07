@@ -3,47 +3,35 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
-
 import { PrismaClient } from '@prisma/client';
-
 import exploreRoutes from './routes/exploreRoutes.js';
 import myInterviewsRoutes from './routes/myInterviewsRoutes.js';
 import pricingRoutes from './routes/pricingRoutes.js';
 import userRoutes from './routes/userRoutes.js';
-import healthRoutes from './routes/healthRoutes.js';
-
 dotenv.config();
-
 const prisma = new PrismaClient();
 const app = express();
 const port = 3000;
-
 // Security and Middleware
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, 
-  limit: 100,
-  message: 'Too many requests from this IP, please try again later.',
+    windowMs: 15 * 60 * 1000,
+    limit: 100,
+    message: 'Too many requests from this IP, please try again later.',
 });
 app.use(limiter);
-
 // API routes
 app.use('/explore', exploreRoutes);
 app.use('/myInterviews', myInterviewsRoutes);
 app.use('/pricing', pricingRoutes);
 app.use('/user', userRoutes);
-app.use('/health', healthRoutes);
-
-
 // Root route
 app.get('/', (req, res) => {
-  res.send('API running with Express + Prisma!');
+    res.send('API running with Express + Prisma!');
 });
-
 // Start server
 app.listen(port, () => console.log(`Server running on port ${port}`));
