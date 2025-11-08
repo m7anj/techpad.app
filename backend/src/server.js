@@ -37,8 +37,6 @@ app.use('/explore', exploreRoutes);
 app.use('/myInterviews', myInterviewsRoutes);
 app.use('/pricing', pricingRoutes);
 app.use('/user', userRoutes);
-app.use('/health', healthRoutes);
-
 
 // Root route
 app.get('/', (req, res) => {
