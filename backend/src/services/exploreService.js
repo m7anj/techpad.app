@@ -35,11 +35,6 @@ async function getExplorePresetById(id) {
   return interview;
 }
 
-
-
-
-
-
 export default {
   getExplorePresets, getExplorePresetById,
 };
