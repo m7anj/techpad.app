@@ -1,9 +1,8 @@
 import express from 'express';
+import { getUserByIdHandler } from '../controllers/userController.js';
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
-    res.send('User information!')
-});
+router.get('/:id', getUserByIdHandler);
 
 export default router;
