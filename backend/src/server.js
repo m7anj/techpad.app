@@ -10,7 +10,6 @@ import exploreRoutes from './routes/exploreRoutes.js';
 import myInterviewsRoutes from './routes/myInterviewsRoutes.js';
 import pricingRoutes from './routes/pricingRoutes.js';
 import userRoutes from './routes/userRoutes.js';
-import healthRoutes from './routes/healthRoutes.js';
 
 dotenv.config();
 

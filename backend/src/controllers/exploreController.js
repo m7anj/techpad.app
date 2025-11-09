@@ -7,7 +7,7 @@ async function getExplorePresetsHandler(req, res) {
         const presets = await getExplorePresets();
         res.status(200).json(presets);
     } catch (error) {
-        console.error(error);
+        console.error("Error in getExplorePresetsHandler:", error);
         res.status(500).json({ message: "Error" });
     }
 }
@@ -18,23 +18,20 @@ async function getExplorePresetByIdHandler(req, res) {
     const { id } = req.params
     try {
         const preset = await getExplorePresetById(id)
-        
+
         if (preset == null) {
-            console.error("Not Found")
             res.status(404).json({ message: "Not Found" })
             return;
         } else {
             res.status(200).json(preset)
         }
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error NOT FOUND"})
+        console.error("Error in getExplorePresetByIdHandler:", error);
+        res.status(500).json({ message: "Error"})
     }
-
-    
 }
 
-export default {
+export {
     getExplorePresetsHandler,
     getExplorePresetByIdHandler,
 };
