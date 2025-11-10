@@ -37,6 +37,8 @@ app.use('/myInterviews', myInterviewsRoutes);
 app.use('/pricing', pricingRoutes);
 app.use('/user', userRoutes);
 
+app.use('/startInterview/', startInterviewRoutes);
+
 // Root route
 app.get('/', (req, res) => {
   res.send('API running with Express + Prisma!');
