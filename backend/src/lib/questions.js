@@ -1,12 +1,11 @@
 import dotenv from "dotenv";
-import OpenAI from "openai";
+import Groq from "groq-sdk";
 
 dotenv.config()
 
-const openai = new OpenAI({
-    apiKey:
-  process.env.OPENAI_API_KEY
-})
+const groq = new Groq({
+    apiKey: process.env.GROQ_API_KEY
+});
 
 async function generateQuestions(p) {
 
@@ -96,8 +95,8 @@ async function generateQuestions(p) {
 
 
 
-    const response = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
+    const response = await groq.chat.completions.create({
+        model: "openai/gpt-oss-120b",
         messages: [{
             role: "system", 
             content: rules
