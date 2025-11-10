@@ -1,8 +1,8 @@
 import express from 'express';
-import { getInterviewByIdHandler } from '../controllers/exploreController.js';
+import { startInterviewHandler } from '../controllers/startInterviewController.js';
 
 const router = express.Router();
 
-router.get('/:id', getInterviewByIdHandler );
+router.get('/:id', startInterviewHandler );
 
 export default router;

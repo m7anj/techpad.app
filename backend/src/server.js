@@ -11,6 +11,8 @@ import myInterviewsRoutes from './routes/myInterviewsRoutes.js';
 import pricingRoutes from './routes/pricingRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 
+import startInterviewRoutes from './routes/startInterviewRoutes.js';
+
 dotenv.config();
 
 const prisma = new PrismaClient();

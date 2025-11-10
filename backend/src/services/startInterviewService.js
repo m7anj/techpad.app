@@ -1,5 +1,5 @@
 import { generateQuestions } from "../lib/questions.js";
-import { getExplorePresetById } from "./exploreService";
+import { getExplorePresetById } from "./exploreService.js";
 
 async function startInterview(id) {
     // get interview data (which has the prompt in there)
@@ -9,4 +9,8 @@ async function startInterview(id) {
     const questions = await generateQuestions(interview.prompt);
 
     return questions;
+}
+
+export {
+    startInterview
 }

@@ -1,11 +1,16 @@
-import { dotenv } from "dotenv";
-import { openai } from "openai";
+import dotenv from "dotenv";
+import OpenAI from "openai";
 
 dotenv.config()
 
-async function generateQuestion(p) {
+const openai = new OpenAI({
+    apiKey:
+  process.env.OPENAI_API_KEY
+})
 
-    const context = `You are an 
+async function generateQuestions(p) {
+
+    const rules = `You are an 
         experienced technical 
         interviewer conducting a 
         live tech interview. Your role is
@@ -23,6 +28,14 @@ async function generateQuestion(p) {
         upon or naturally 
         transition from the previous
         one
+        - Think about the fact that between 
+        qeustions (i.e between id=1, id=2...)
+        there is going to be followup questions
+         when a main question is asked, these 
+         followup qeustions are going to be an 
+         addon to the question you've just asked, 
+         so remember to keep some headroom as to 
+         when you want these to come about.
         - Start with foundational 
         concepts and gradually 
         increase complexity
@@ -78,5 +91,26 @@ async function generateQuestion(p) {
         and create good conversation
         flow. Also, make sure it's based 
         off a topic which is talked about 
-        from this interview.prompt string here: ` + p;
+        from this interview.prompt string here: `;
+
+
+
+
+    const response = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [{
+            role: "system", 
+            content: rules
+        }, {
+            role: "user", 
+            content: p
+        }]
+    })
+
+
+    return JSON.parse(response.choices[0].message.content);
+}
+
+export {
+    generateQuestions
 }
