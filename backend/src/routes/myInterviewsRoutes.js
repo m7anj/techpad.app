@@ -1,9 +1,8 @@
 import express from 'express';
+import { getCompletedInterviewsByUserId } from '../controllers/myInterviewsController.js';
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
-    res.send('These are interviews you have completed!')
-});
+router.get('/:userId', getCompletedInterviewsByUserId);
 
 export default router;
