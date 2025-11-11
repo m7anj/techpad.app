@@ -39,7 +39,7 @@ app.use('/myInterviews', myInterviewsRoutes);
 app.use('/pricing', pricingRoutes);
 app.use('/user', userRoutes);
 
-app.use('/startInterview/', startInterviewRoutes);
+app.use('/interview/', startInterviewRoutes);
 
 // Root route
 app.get('/', (req, res) => {
