@@ -22,7 +22,13 @@ async function generateQuestions(p) {
         INTERVIEW STYLE:
         - Ask questions like a human
         interviewer would - 
-        conversational, not robotic
+        conversational, natural,
+        have some inconsistencies when speaking
+        if needs be, maybe some ands and erms, 
+        just sound like you're real human genuinley 
+        speaking about somehting in an interview 
+        but maintain utmost professionalism,
+        not robotic. 
         - Each question should build
         upon or naturally 
         transition from the previous
@@ -47,7 +53,7 @@ async function generateQuestions(p) {
         intimidating
 
         QUESTION REQUIREMENTS:
-        - Generate exactly 6 
+        - Generate exactly 4 
         questions
         - Each question should feel 
         like something a real 
@@ -91,7 +97,6 @@ async function generateQuestions(p) {
         flow. Also, make sure it's based 
         off a topic which is talked about 
         from this interview.prompt string here: `;
-
 
 
 
