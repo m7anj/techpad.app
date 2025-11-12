@@ -10,14 +10,18 @@ import exploreRoutes from './routes/exploreRoutes.js';
 import myInterviewsRoutes from './routes/myInterviewsRoutes.js';
 import pricingRoutes from './routes/pricingRoutes.js';
 import userRoutes from './routes/userRoutes.js';
-
-import startInterviewRoutes from './routes/startInterviewRoutes.js';
+import setupWebSocketRoutes from './routes/startInterviewRoutes.js';
 
 dotenv.config();
 
 const prisma = new PrismaClient();
 const app = express();
 const port = 3000;
+
+import expressWs from 'express-ws';
+
+expressWs(app);
+
 
 // Security and Middleware
 app.use(helmet());
@@ -39,7 +43,7 @@ app.use('/myInterviews', myInterviewsRoutes);
 app.use('/pricing', pricingRoutes);
 app.use('/user', userRoutes);
 
-app.use('/interview/', startInterviewRoutes);
+setupWebSocketRoutes(app);
 
 // Root route
 app.get('/', (req, res) => {

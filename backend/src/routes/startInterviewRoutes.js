@@ -1,8 +1,19 @@
 import express from 'express';
-import { startInterviewHandler } from '../controllers/startInterviewController.js';
+import { startInterview } from '../services/startInterviewService.js';
 
-const router = express.Router();
+export default function setupWebSocketRoutes(app) {
+    app.ws('/interview/:id', async (ws, req) => {
 
-router.get('/:id', startInterviewHandler );
+        console.log('Interview started');
 
-export default router;
+        const questions = await startInterview(req.params.id);
+
+        ws.on('message', function(msg){ 
+            ws.send(msg);
+        });
+
+        ws.on('close', function(){
+            console.log('Interview closed');
+        });
+    });
+}
