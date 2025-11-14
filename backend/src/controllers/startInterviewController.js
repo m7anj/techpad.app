@@ -16,8 +16,3 @@ async function startInterviewHandler(req, res) {
 }
 
 export { startInterviewHandler };
-
-// async function startInterviewHandler(req, res){
-
-//     const await startInterview(req);
-// }
