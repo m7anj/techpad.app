@@ -1,12 +1,12 @@
-import { startInterview } from "../services/startInterviewService.js";
+import { setupInterview } from "../services/interviewService.js";
 import { getExplorePresetById } from "../services/exploreService.js"
 
 // Handle a request to start an interview
 
-async function startInterviewHandler(req, res) {
+async function getInterviewQuestionsHandler(req, res) {
     const { id } = req.params
     try {
-        const questions = await startInterview(id)
+        const questions = await setupInterview(id)
         res.status(200).json(questions)
     } catch (error) {
         console.error("Error:", error)
@@ -15,4 +15,4 @@ async function startInterviewHandler(req, res) {
     return questions;
 }
 
-export { startInterviewHandler };
+export { getInterviewQuestionsHandler };
