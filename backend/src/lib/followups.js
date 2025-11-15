@@ -49,7 +49,21 @@ async function generateFollowups(currentQuestion, responses) {
         max_tokens: 150
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    try {
+        console.log("Raw AI response:", response.choices[0].message.content);
+        return JSON.parse(response.choices[0].message.content);
+    } catch (error) {
+        console.error("JSON parse error:", error);
+        console.log("Response content:", response.choices[0].message.content);
+        // Return a fallback response
+        return {
+            followup: {
+                forWhatQuestion: 1,
+                followupQuestion: "Can you elaborate on that point?",
+                isThisTheEnd: false
+            }
+        };
+    }
 }
 
 export { generateFollowups };

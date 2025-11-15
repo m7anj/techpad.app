@@ -27,18 +27,26 @@ export default function setupWebSocketRoutes(app) {
         
         const session = activeSessions.get(sessionId);   // load the current session's data into memory, we add to it from this point on. we don't directly change the hashmap's entry, we can save power by doing this at the end.
 
-        ws.send(JSON.stringify(questions, null, 2));
+        ws.send(JSON.stringify({type: "connected", message: "Interview started"}));
 
         ws.on('message', async function(data) {
             const message = JSON.parse(data);
             const session = activeSessions.get(sessionId);
 
-            if (message.type == "questionAnswer") {
+            if (message.type == "startInterview") {
+                ws.send(JSON.stringify({
+                    type: "question",
+                    question: session.questions.questions[0].question,
+                    questionIndex: 1
+                }));
+            }
+
+            else if (message.type == "questionAnswer") {
                 session.questionAnswers.push(message.content);
 
                 // Generate followup for this question
                 const followup = await generateFollowups(
-                    session.questions[session.currentQuestionIndex - 1],
+                    session.questions.questions[session.currentQuestionIndex - 1].question,
                     [message.content]
                 );
 
@@ -52,14 +60,14 @@ export default function setupWebSocketRoutes(app) {
                 // Generate next followup based on all answers for this question
                 const allResponses = [...session.questionAnswers.slice(-1), ...session.followupAnswers];
                 const followup = await generateFollowups(
-                    session.questions[session.currentQuestionIndex - 1],
+                    session.questions.questions[session.currentQuestionIndex - 1].question,
                     allResponses
                 );
 
                 if (followup.followup.isThisTheEnd) {
                     // Move to next question
                     session.currentQuestionIndex++;
-                    if (session.currentQuestionIndex <= session.questions.length) {
+                    if (session.currentQuestionIndex <= session.questions.questions.length) {
                         ws.send(JSON.stringify({type: "nextQuestion", questionIndex: session.currentQuestionIndex}));
                     } else {
                         ws.send(JSON.stringify({type: "interviewComplete"}));
@@ -73,10 +81,6 @@ export default function setupWebSocketRoutes(app) {
             console.log("Session: " + JSON.stringify(session, null, 2));
             
         });
-
-
-
-
 
         ws.on('close', function(){
             console.log('Interview closed');
