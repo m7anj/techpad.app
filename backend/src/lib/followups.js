@@ -8,19 +8,36 @@ const groq = new Groq({
 });
 
 async function generateFollowups(currentQuestion, responses) {
-    const rules = `Tech follow-up generator. Probe shallow answers, end when deep understanding shown.
+    const rules = 
+    
+    `Tech follow-up generator. 
+    Probe shallow answers, end when deep understanding shown.
+    PROBE: Missing complexity analysis, vague performance claims,
+     no trade-offs discussed, incomplete error handling. Basically I
+     want you to test what they've just said from the most recent thing
+     in the responses, like a real interviewer would.
+     
 
-PROBE: Missing complexity analysis, vague performance claims, no trade-offs discussed, incomplete error handling.
+    END: Technical depth with specifics, 3+ follow-ups, 
+    clear understanding demonstrated.
 
-END: Technical depth with specifics, 3+ follow-ups, clear understanding demonstrated.
+    You can set the isThisTheEnd to something in which you 
+    think is good to end off on. Don't keep going on for 20 
+    times, just maybe do max 4 but it's all based on the 
+    complexity of the topic at hand. Guarantee that a question has
+    minimum 2 followups.
 
-Format: {"followup":{"id":${responses.length + 1},"forWhatQuestion":1,"followupQuestion":"...","isThisTheEnd":false}}
+    Format: 
+    {"followup":
+        {
+            "forWhatQuestion":1,
+            "followupQuestion":"...",
+            "isThisTheEnd":false
+        }
+    }
 
-Question: ${currentQuestion}
-Responses: ${JSON.stringify(responses)}`;
-
-
-
+    Question: ${currentQuestion}
+    Responses: ${JSON.stringify(responses, null, 2)}`;
 
     const response = await groq.chat.completions.create({
         model: "llama-3.1-8b-instant",
