@@ -13,7 +13,7 @@ model User {
   id                    String          @id @default(uuid())
   clerkId               String          @unique
   email                 String          @unique
-  username              String          @unique
+  username              String?         @unique
   profilePicture        String?
 
   subTeir               String          @default("free")
@@ -33,7 +33,7 @@ model completedInterview {
 
   timeTaken             Int
   score                 Float?
-  feedback              String
+  feedback              Json?
   completedAt           DateTime      @default(now())
   messages              Message[]
 }

@@ -27,4 +27,35 @@ async function getCompletedInterviewsByUserId(userId) {
     return completedInterviews;
 }
 
-export { getCompletedInterviewsByUserId };
+async function addCompletedInterview(userId, interviewId, questionAnswers, timeTaken, score, feedback) {
+    const completedInterview = await prisma.completedInterview.create({
+        data: {
+            userId,
+            interviewId,
+            timeTaken,
+            score,
+            feedback,
+            messages: {
+                create: questionAnswers.map((qa, index) => [
+                    {
+                        content: qa.question,
+                        sequence: index * 2,
+                        role: 'assistant'
+                    },
+                    {
+                        content: qa.answer,
+                        sequence: index * 2 + 1,
+                        role: 'user'
+                    }
+                ]).flat()
+            }
+        },
+        include: {
+            messages: true
+        }
+    });
+
+    return completedInterview;
+}
+
+export { getCompletedInterviewsByUserId, addCompletedInterview };

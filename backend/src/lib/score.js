@@ -18,7 +18,19 @@ COMMUNICATION (30%): Technical clarity and vocabulary. Precise explanations.
 
 Overall = weighted average. Be precise about gaps and strengths. (Make sure they mathematically add up to 100 and the weights make sense).
 
-Output: {"overallScore":N,"breakdown":{"technical":N,"problemSolving":N,"commhunication":N},"strengths":[],"gaps":[],"improvement":[]}
+Output: 
+{
+    "overallScore":N,
+    "breakdown":
+        {
+        "technical":N,
+        "problemSolving":N,
+        "communication":N
+        },
+    "strengths":[],
+    "gaps":[],
+    "improvement":[]
+}
 
 Type: ${interviewType}
 Data: ${JSON.stringify(conversationData)}`;

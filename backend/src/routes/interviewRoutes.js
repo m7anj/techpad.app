@@ -2,9 +2,12 @@ import express from 'express';
 import { setupInterview } from '../services/interviewService.js';
 import { nodeModuleNameResolver } from 'typescript';
 import { generateFollowups } from '../lib/followups.js'
+import { closeInterview } from '../services/interviewService.js';
 
 const activeSessions = new Map(); // Initialising a new map when the server starts running which has all the activeSessions in here.
 
+
+// websocket functionality
 export default function setupWebSocketRoutes(app) {
     app.ws('/interview/:id', async (ws, req) => {
 
@@ -24,10 +27,14 @@ export default function setupWebSocketRoutes(app) {
         })
 
         ws.sessionId = sessionId; // set the webSocket's sessionId to a more accessible variable
-        
-        const session = activeSessions.get(sessionId);   // load the current session's data into memory, we add to it from this point on. we don't directly change the hashmap's entry, we can save power by doing this at the end.
+        const session = activeSessions.get(sessionId);   // load the current session's data into memory,
+        //  we add to it from this point on. we don't directly change the hashmap's entry, we can save 
+        //  the data in a variable and then change it.
 
+        // WebSocket: initial message to the user that the interview has started
         ws.send(JSON.stringify({type: "connected", message: "Interview started"}));
+
+        // WebSocket: message handling
 
         ws.on('message', async function(data) {
             const message = JSON.parse(data);
@@ -82,8 +89,12 @@ export default function setupWebSocketRoutes(app) {
             
         });
 
+        // WebSocket: close Interview handling
+
         ws.on('close', function(){
-            console.log('Interview closed');
+            const completedSession = activeSessions.get(sessionId); // extract session and use as param for closeInterview
+            console.log("Session completed: " + JSON.stringify(completedSession, null, 2)); // test gfdsdsfdsf
+            closeInterview(req.params.id, completedSession);
         });
     });
 }
