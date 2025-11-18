@@ -17,6 +17,7 @@
   "description": "",
   "dependencies": {
     "@clerk/backend": "^2.20.0",
+    "@clerk/express": "^1.7.50",
     "@prisma/client": "^6.19.0",
     "@types/express": "^5.0.5",
     "@types/node": "^24.10.0",

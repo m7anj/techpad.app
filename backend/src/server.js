@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
+import { clerkMiddleware } from '@clerk/express';
 
 import { PrismaClient } from '@prisma/client';
 
@@ -28,6 +29,7 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(clerkMiddleware());
 
 // Rate limiting
 const limiter = rateLimit({
