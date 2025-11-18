@@ -15,12 +15,12 @@ async function setupInterview(id) {
 }
 
 // this is the handler of closing the interview and adding it's data to the database
-async function closeInterview(interviewId, session) {
+async function closeInterview(interviewId, session, clerkUserId) {
     const feedback = await generateInterviewScore(session.questionAnswers, "Technical Interview");
     const overallScore = feedback.overallScore;
 
     const result = await addCompletedInterview(
-        1, // userId - hardcoded for now
+        clerkUserId, // Now using actual authenticated user ID
         interviewId,
         session.questionAnswers,
         null, // timeTaken - not tracked currently

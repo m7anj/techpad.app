@@ -25,6 +25,38 @@ async function getUserById(id) {
   return user;
 }
 
+async function getUserByClerkId(clerkId) {
+  const user = await prisma.user.findUnique({
+    where: {
+      clerkId,
+    },
+    include: {
+      completedInterviews: {
+        include: {
+          interview: true
+        }
+      }
+    },
+  });
+  return user;
+}
+
+async function createUser(userData) {
+  const user = await prisma.user.create({
+    data: userData,
+    include: {
+      completedInterviews: {
+        include: {
+          interview: true
+        }
+      }
+    },
+  });
+  return user;
+}
+
 export {
   getUserById,
+  getUserByClerkId,
+  createUser,
 };

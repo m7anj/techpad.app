@@ -11,7 +11,16 @@ const activeSessions = new Map(); // Initialising a new map when the server star
 export default function setupWebSocketRoutes(app) {
     app.ws('/interview/:id', async (ws, req) => {
 
-        const sessionId = `user_${Date.now()}`;
+        // Get authenticated user ID
+        const { userId: clerkUserId } = req.auth;
+
+        if (!clerkUserId) {
+            ws.send(JSON.stringify({type: "error", message: "Unauthorized"}));
+            ws.close();
+            return;
+        }
+
+        const sessionId = `user_${clerkUserId}_${Date.now()}`;
          // Creating a unique sessionId based on the userId and the timeCreated
 
         const questions = await setupInterview(req.params.id);
@@ -19,9 +28,10 @@ export default function setupWebSocketRoutes(app) {
         console.log("Questions: " + JSON.stringify(questions, null, 2));   // before anyhting we recieve qeustion data
 
         activeSessions.set(sessionId, { // Creating a hashmap entry in activeSessions{} for the session's data
+            clerkUserId: clerkUserId,   // Store the authenticated user ID
             questions: questions,   // Questions we are going to ask
             currentQuestionIndex: 1,    // q counter (every qeustion will be ++)
-            followupQuestions: [],    
+            followupQuestions: [],
             followupAnswers: [],  // followups (dynamically going to be added to)
             questionAnswers: [] // userAnswers (when user responds we add to this)
         })
@@ -121,7 +131,7 @@ export default function setupWebSocketRoutes(app) {
         ws.on('close', function(){
             const completedSession = activeSessions.get(sessionId); // extract session and use as param for closeInterview
             console.log("Session completed: " + JSON.stringify(completedSession, null, 2)); // test gfdsdsfdsf
-            closeInterview(req.params.id, completedSession);
+            closeInterview(req.params.id, completedSession, clerkUserId);
         });
     });
 }
