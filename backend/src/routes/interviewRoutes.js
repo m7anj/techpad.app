@@ -54,7 +54,8 @@ export default function setupWebSocketRoutes(app) {
                 // Generate followup for this question
                 const followup = await generateFollowups(
                     session.questions.questions[session.currentQuestionIndex - 1].question,
-                    [message.content]
+                    [message.content],
+                    session.currentQuestionIndex
                 );
 
                 session.followupQuestions.push(followup.followup);
@@ -64,18 +65,44 @@ export default function setupWebSocketRoutes(app) {
             else if (message.type == "followupAnswer") {
                 session.followupAnswers.push(message.content);
 
+                // Count followups for current question
+                const currentQuestionFollowups = session.followupQuestions.filter(f => f.forWhatQuestion === session.currentQuestionIndex);
+                const followupCount = currentQuestionFollowups.length;
+
+                // Force move to next question after 2 followups
+                if (followupCount >= 2) {
+                    session.currentQuestionIndex++;
+                    session.followupAnswers = []; // Reset followup answers for new question
+                    if (session.currentQuestionIndex <= session.questions.questions.length) {
+                        ws.send(JSON.stringify({
+                            type: "question",
+                            question: session.questions.questions[session.currentQuestionIndex - 1].question,
+                            questionIndex: session.currentQuestionIndex
+                        }));
+                    } else {
+                        ws.send(JSON.stringify({type: "interviewComplete"}));
+                    }
+                    return;
+                }
+
                 // Generate next followup based on all answers for this question
                 const allResponses = [...session.questionAnswers.slice(-1), ...session.followupAnswers];
                 const followup = await generateFollowups(
                     session.questions.questions[session.currentQuestionIndex - 1].question,
-                    allResponses
+                    allResponses,
+                    session.currentQuestionIndex
                 );
 
                 if (followup.followup.isThisTheEnd) {
                     // Move to next question
                     session.currentQuestionIndex++;
+                    session.followupAnswers = []; // Reset followup answers for new question
                     if (session.currentQuestionIndex <= session.questions.questions.length) {
-                        ws.send(JSON.stringify({type: "nextQuestion", questionIndex: session.currentQuestionIndex}));
+                        ws.send(JSON.stringify({
+                            type: "question",
+                            question: session.questions.questions[session.currentQuestionIndex - 1].question,
+                            questionIndex: session.currentQuestionIndex
+                        }));
                     } else {
                         ws.send(JSON.stringify({type: "interviewComplete"}));
                     }

@@ -16,18 +16,19 @@ async function setupInterview(id) {
 
 // this is the handler of closing the interview and adding it's data to the database
 async function closeInterview(interviewId, session) {
-    const feedback = await generateInterviewScore(session.questionAnswers, session.questions.type);
+    const feedback = await generateInterviewScore(session.questionAnswers, "Technical Interview");
     const overallScore = feedback.overallScore;
 
     const result = await addCompletedInterview(
-        session.userId,
+        1, // userId - hardcoded for now
         interviewId,
         session.questionAnswers,
-        session.timeTaken,
+        null, // timeTaken - not tracked currently
         overallScore,
         feedback
     );
 
+    console.log("Interview completed and saved to database:", result);
     return result;
 }
 
