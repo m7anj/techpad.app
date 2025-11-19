@@ -1,33 +1,29 @@
 import React from 'react'
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react'
+import Dashboard from './pages/dashboard/Dashboard'
+import LandingPage from './pages/landing/LandingPage'
+import { Routes } from 'react-router-dom'
 import './styles/components/App.css'
+import { Route } from 'react-router-dom'
 
 function App() {
-  return (
-    <div className="app">
-      <SignedOut>
-        <div className="landing">
-          <h1 className="app-title">TechPrep</h1>
-          <p>Practice technical interviews with AI</p>
-          <SignInButton mode="modal">
-            <button>Get Started</button>
-          </SignInButton>
-        </div>
-      </SignedOut>
+    return (
+      <div className="app">
+        <SignedOut>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/welcome" element={<LandingPage />} />
+          </Routes>
+        </SignedOut>
 
-      <SignedIn>
-        <div className="authenticated-app">
-          <header>
-            <h1>TechPrep Dashboard</h1>
-            <UserButton />
-          </header>
-          <main>
-            <p>Welcome! Your dashboard will go here.</p>
-          </main>
-        </div>
-      </SignedIn>
-    </div>
-  )
-}
+        <SignedIn>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+          </Routes>
+        </SignedIn>
+      </div>
+    )
+  }
 
 export default App
