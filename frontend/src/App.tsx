@@ -4,11 +4,16 @@ import Dashboard from './pages/dashboard/Dashboard'
 import LandingPage from './pages/landing/LandingPage'
 import { Routes } from 'react-router-dom'
 import './styles/components/App.css'
+import './styles/globals.css'
+import './styles/components/clerk.css'
 import { Route } from 'react-router-dom'
+import DarkModeToggle from './components/DarkModeToggle'
 
 function App() {
     return (
       <div className="app">
+        <DarkModeToggle />
+
         <SignedOut>
           <Routes>
             <Route path="/" element={<LandingPage />} />
