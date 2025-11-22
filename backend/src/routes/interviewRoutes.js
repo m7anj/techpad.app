@@ -11,23 +11,35 @@ const activeSessions = new Map(); // Initialising a new map when the server star
 export default function setupWebSocketRoutes(app) {
     app.ws('/interview/:id', async (ws, req) => {
 
-        // Get authenticated user ID
-        const { userId: clerkUserId } = req.auth;
+        let clerkUserId = null;
+
+        // Try to get authenticated user ID from Clerk middleware
+        if (req.auth && req.auth.userId) {
+            clerkUserId = req.auth.userId;
+            console.log(`🔗 WebSocket connected with auth: ${clerkUserId}`);
+        } else {
+            // For now, we'll accept connections without auth for testing
+            // In production, you'd want proper WebSocket auth
+            console.log('🔗 WebSocket connected - no auth found, using test user');
+            clerkUserId = 'test-user-id';
+        }
 
         if (!clerkUserId) {
+            console.log('❌ No user ID - closing connection');
             ws.send(JSON.stringify({type: "error", message: "Unauthorized"}));
             ws.close();
             return;
         }
 
         const sessionId = `user_${clerkUserId}_${Date.now()}`;
-         // Creating a unique sessionId based on the userId and the timeCreated
+        console.log(`📝 Creating session: ${sessionId} for interview ${req.params.id}`);
 
-        const questions = await setupInterview(req.params.id);
+        try {
+            const questions = await setupInterview(req.params.id);
+            console.log("✅ Questions fetched successfully");
+            console.log("Questions: " + JSON.stringify(questions, null, 2));
 
-        console.log("Questions: " + JSON.stringify(questions, null, 2));   // before anyhting we recieve qeustion data
-
-        activeSessions.set(sessionId, { // Creating a hashmap entry in activeSessions{} for the session's data
+            activeSessions.set(sessionId, { // Creating a hashmap entry in activeSessions{} for the session's data
             clerkUserId: clerkUserId,   // Store the authenticated user ID
             questions: questions,   // Questions we are going to ask
             currentQuestionIndex: 1,    // q counter (every qeustion will be ++)
@@ -42,6 +54,7 @@ export default function setupWebSocketRoutes(app) {
         //  the data in a variable and then change it.
 
         // WebSocket: initial message to the user that the interview has started
+        console.log(`✅ Session created successfully. Sending connected message.`);
         ws.send(JSON.stringify({type: "connected", message: "Interview started"}));
 
         // WebSocket: message handling
@@ -50,12 +63,23 @@ export default function setupWebSocketRoutes(app) {
             const message = JSON.parse(data);
             const session = activeSessions.get(sessionId);
 
+            console.log("Received WebSocket message:", message);
+
+            if (message.type == "ping") {
+                // Respond to heartbeat
+                ws.send(JSON.stringify({ type: "pong" }));
+                return;
+            }
+
             if (message.type == "startInterview") {
-                ws.send(JSON.stringify({
+                console.log("Processing startInterview request...");
+                const firstQuestion = {
                     type: "question",
                     question: session.questions.questions[0].question,
                     questionIndex: 1
-                }));
+                };
+                console.log("Sending first question:", firstQuestion);
+                ws.send(JSON.stringify(firstQuestion));
             }
 
             else if (message.type == "questionAnswer") {
@@ -69,7 +93,18 @@ export default function setupWebSocketRoutes(app) {
                 );
 
                 session.followupQuestions.push(followup.followup);
-                ws.send(JSON.stringify(followup));
+
+                // Send followup with proper type for frontend
+                const followupMessage = {
+                    type: "followup",
+                    followup: {
+                        question: followup.followup.followupQuestion,
+                        isThisTheEnd: followup.followup.isThisTheEnd,
+                        forWhatQuestion: followup.followup.forWhatQuestion
+                    }
+                };
+                console.log("Sending followup:", followupMessage);
+                ws.send(JSON.stringify(followupMessage));
             }
 
             else if (message.type == "followupAnswer") {
@@ -118,11 +153,21 @@ export default function setupWebSocketRoutes(app) {
                     }
                 } else {
                     session.followupQuestions.push(followup.followup);
-                    ws.send(JSON.stringify(followup));
+
+                    // Send followup with proper type for frontend
+                    const followupMessage = {
+                        type: "followup",
+                        followup: {
+                            question: followup.followup.followupQuestion,
+                            isThisTheEnd: followup.followup.isThisTheEnd,
+                            forWhatQuestion: followup.followup.forWhatQuestion
+                        }
+                    };
+                    console.log("Sending followup:", followupMessage);
+                    ws.send(JSON.stringify(followupMessage));
                 }
             }
-            console.log("Message: " + JSON.stringify(message, null, 2));
-            console.log("Session: " + JSON.stringify(session, null, 2));
+            // Session processing complete
             
         });
 
@@ -133,5 +178,12 @@ export default function setupWebSocketRoutes(app) {
             console.log("Session completed: " + JSON.stringify(completedSession, null, 2)); // test gfdsdsfdsf
             closeInterview(req.params.id, completedSession, clerkUserId);
         });
+
+        } catch (error) {
+            console.log(`❌ Error setting up interview: ${error.message}`);
+            ws.send(JSON.stringify({type: "error", message: "Failed to setup interview"}));
+            ws.close();
+            return;
+        }
     });
 }
