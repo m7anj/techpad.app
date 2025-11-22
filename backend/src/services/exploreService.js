@@ -8,7 +8,6 @@ const prisma = new PrismaClient();
 // don't need an include {} here because we're selecting everything
 async function getExplorePresets() {
   const interviews = await prisma.interview.findMany({
-    take: 10,
   });
   return interviews;
 }

@@ -1,8 +1,49 @@
 import React from 'react'
-import { UserButton } from '@clerk/clerk-react'
+import { useState, useEffect } from 'react'
+import { UserButton, useAuth } from '@clerk/clerk-react'
 import './Dashboard.css'
+import { data } from 'react-router-dom'
 
 const Dashboard = () => {
+
+    const { getToken } = useAuth();
+
+    const [presets, setPresets] = useState<any[]>([]);
+
+    useEffect(() => {
+    
+    const fetchPresets = async () => {
+        try {
+            
+            const token = await getToken();
+            console.log(token);
+
+            const res = await fetch("http://localhost:4000/explore", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!res.ok) {
+                throw new Error("Failed to fetch data");
+            }
+
+            const res_json = await res.json();
+            console.log(res_json);
+            setPresets(res_json);
+
+        }   catch(err) {
+            console.log(err);
+        }
+    };
+
+    fetchPresets();
+
+        
+
+    }, [getToken]);
+    
+    
     return (
         <div className="dashboard">
             <nav className="nav">
@@ -24,7 +65,22 @@ const Dashboard = () => {
                     </header>
 
                     <section className="interview-cards">
-                        {/* Your interview cards will go here */}
+                        {presets ? (
+                            presets.map((preset) => (
+                                <div key={preset.id} className="preset-card">
+                                    <h3>{preset.type}</h3>
+                                    <p>{preset.topic}</p>
+                                    <p>{preset.description}</p>
+                                    <p>{preset.difficulty}</p>
+                                    <p>{preset.expectedDuration}</p>
+                                    <button className="btn btn-primary">Start</button>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="empty-activity">
+                                <p>No presets found</p>
+                            </div>
+                        )}
                     </section>
                 </div>
             </main>
