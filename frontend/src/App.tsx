@@ -3,6 +3,7 @@ import { SignedIn, SignedOut } from '@clerk/clerk-react'
 import { Routes, Route } from 'react-router-dom'
 import Dashboard from './pages/dashboard/Dashboard'
 import LandingPage from './pages/landing/LandingPage'
+import Interview from './pages/interview/Interview'
 import './styles/globals.css'
 import './styles/components/clerk.css'
 function App() {
@@ -20,6 +21,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/interview/:id" element={<Interview />} />
           </Routes>
         </SignedIn>
       </div>

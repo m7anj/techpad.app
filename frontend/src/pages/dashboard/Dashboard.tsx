@@ -1,12 +1,13 @@
 import React from 'react'
 import { useState, useEffect } from 'react'
 import { UserButton, useAuth } from '@clerk/clerk-react'
+import { useNavigate } from 'react-router-dom'
 import './Dashboard.css'
-import { data } from 'react-router-dom'
 
 const Dashboard = () => {
 
     const { getToken } = useAuth();
+    const navigate = useNavigate();
 
     const [presets, setPresets] = useState<any[]>([]);
 
@@ -39,9 +40,13 @@ const Dashboard = () => {
 
     fetchPresets();
 
-        
-
     }, [getToken]);
+
+
+    const startInterview = (preset: any) => {
+        console.log("Starting interview with preset:", preset);
+        navigate(`/interview/${preset.id}`, { state: { preset } });
+    }
     
     
     return (
@@ -71,9 +76,8 @@ const Dashboard = () => {
                                     <h3>{preset.type}</h3>
                                     <p>{preset.topic}</p>
                                     <p>{preset.description}</p>
-                                    <p>{preset.difficulty}</p>
                                     <p>{preset.expectedDuration}</p>
-                                    <button className="btn btn-primary">Start</button>
+                                    <button className="btn btn-primary" onClick={() => startInterview(preset)}>Start</button>
                                 </div>
                             ))
                         ) : (
