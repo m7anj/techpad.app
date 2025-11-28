@@ -19,6 +19,7 @@ const Interview = () => {
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [timer, setTimer] = useState(0);
+  const [isFollowup, setIsFollowup] = useState(false);
 
   // Tools state
   const [activeTab, setActiveTab] = useState<"code" | "whiteboard">("code");
@@ -48,10 +49,13 @@ const Interview = () => {
       if (data.type === "question") {
         setIsConnected(true);
         setCurrentQuestion(data.question);
+        setIsFollowup(false);
       } else if (data.type === "followup") {
         setCurrentQuestion(data.followup.question);
+        setIsFollowup(true);
       } else if (data.type === "interviewComplete") {
         setCurrentQuestion("Interview complete! Thank you.");
+        setIsFollowup(false);
       }
     };
 
@@ -99,16 +103,18 @@ const Interview = () => {
     }
 
     // Send message with answer, code, and whiteboard
+    const messageType = isFollowup ? "followupAnswer" : "questionAnswer";
+
     ws.send(
       JSON.stringify({
-        type: "questionAnswer",
+        type: messageType,
         content: answer,
         code: code || null,
         whiteboard: whiteboardBase64,
       }),
     );
 
-    console.log("📤 Sent answer with:", {
+    console.log("📤 Sent " + messageType + " with:", {
       answer: answer.substring(0, 50) + "...",
       hasCode: !!code,
       hasWhiteboard: !!whiteboardBase64,

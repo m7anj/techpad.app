@@ -43,12 +43,14 @@ async function generateQuestions(p) {
     }
     • All questions must be unique, progressively harder, and written in natural interviewer style.
 
+
     --- DIFFICULTY GUIDELINES ---
     • Q1 → Very easy basics of the topic.
     • Q2 → Intermediate real-world application
     • Q3 → Hard scenario or debugging question
     • Q4 → Very hard deep-dive / systems / edge case or optimisation question
 
+    It's important that each question will provide a bridge between one another and lead to the next qeustion. Like, alright now we've covered that, i want to ask about ... or something like that.
     Return ONLY the JSON. No explanations. No additional text. Nothing else.
 
     `;

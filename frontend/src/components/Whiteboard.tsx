@@ -30,16 +30,39 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
     const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
     const [history, setHistory] = useState<any[][]>([]);
 
-    // Set canvas size once on mount
+    // Set canvas size on mount and when container becomes visible
     useEffect(() => {
       const canvas = canvasRef.current;
       const container = containerRef.current;
       if (!canvas || !container) return;
 
-      const rect = container.getBoundingClientRect();
-      setCanvasSize({ width: rect.width, height: rect.height });
-      canvas.width = rect.width;
-      canvas.height = rect.height;
+      const updateSize = () => {
+        const rect = container.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          canvas.width = rect.width;
+          canvas.height = rect.height;
+          canvas.style.width = rect.width + "px";
+          canvas.style.height = rect.height + "px";
+          setCanvasSize({ width: rect.width, height: rect.height });
+        }
+      };
+
+      // Initial size
+      updateSize();
+
+      // Retry after delays for when component becomes visible
+      const timeout1 = setTimeout(updateSize, 100);
+      const timeout2 = setTimeout(updateSize, 500);
+
+      // Watch for resize
+      const resizeObserver = new ResizeObserver(updateSize);
+      resizeObserver.observe(container);
+
+      return () => {
+        clearTimeout(timeout1);
+        clearTimeout(timeout2);
+        resizeObserver.disconnect();
+      };
     }, []);
 
     // Redraw canvas whenever lines change
@@ -50,8 +73,8 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      // Clear canvas
-      ctx.fillStyle = "white";
+      // Clear canvas with dark background
+      ctx.fillStyle = "#1a1a1a";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw all lines
@@ -65,7 +88,7 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
           streamline: 0.5,
         });
 
-        ctx.fillStyle = "#000";
+        ctx.fillStyle = "#ffffff";
         ctx.beginPath();
 
         if (stroke.length) {
