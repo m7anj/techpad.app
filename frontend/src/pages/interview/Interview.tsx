@@ -29,11 +29,12 @@ const Interview = () => {
   const webcamRef = useRef<Webcam>(null);
   const [cameraOn, setCameraOn] = useState(true);
 
-  // Connect to WebSocket
+  // WEB SOCKET CONNECTION
   useEffect(() => {
-    const socket = new WebSocket(`ws://localhost:3000/interview/${id}`);
+    const socket = new WebSocket(`ws://localhost:4000/interview/${id}`);
 
     socket.onopen = () => {
+      setIsConnected(true);
       console.log("WebSocket connection opened");
     };
 
@@ -88,8 +89,7 @@ const Interview = () => {
     ws.send(
       JSON.stringify({
         type: "questionAnswer",
-        content: answer,
-        code: code || null,
+        content: answer + "\nCode: " + code,
       }),
     );
 
