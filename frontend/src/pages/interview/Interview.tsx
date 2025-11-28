@@ -4,6 +4,7 @@ import Webcam from "react-webcam";
 import Editor from "@monaco-editor/react";
 import "./Interview.css";
 import { Whiteboard, WhiteboardRef } from "../../components/Whiteboard";
+import { Navbar } from "../../components/Navbar";
 
 const Interview = () => {
   const { id } = useParams();
@@ -93,12 +94,11 @@ const Interview = () => {
   const submitAnswer = () => {
     if (!ws || !answer.trim()) return;
 
-    // Get whiteboard canvas and convert to base64
+    // get whiteboard canvas and convert to base64
     let whiteboardBase64 = null;
     const canvas = whiteboardRef.current?.getCanvas();
     if (canvas) {
       const dataURL = canvas.toDataURL("image/png");
-      // Remove the "data:image/png;base64," prefix
       whiteboardBase64 = dataURL.split(",")[1];
     }
 
@@ -132,19 +132,7 @@ const Interview = () => {
 
   return (
     <div className="interview-page">
-      {/* Header */}
-      <div className="interview-header">
-        <div className="container">
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="btn btn-ghost back-btn"
-          >
-            ← Back
-          </button>
-          <h1 className="interview-title">{preset?.type || "Interview"}</h1>
-          <div className="interview-timer">⏱️ {formatTime(timer)}</div>
-        </div>
-      </div>
+      <Navbar />
 
       {/* Main Content */}
       <div className="interview-container">

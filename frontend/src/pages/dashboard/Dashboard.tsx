@@ -4,6 +4,7 @@ import { UserButton, useAuth } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import "./skeleton.css";
+import { Navbar } from "../../components/Navbar";
 
 const Dashboard = () => {
   const { getToken } = useAuth();
@@ -49,7 +50,8 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard">
-      <nav className="nav">
+      <Navbar />
+      <nav className="nav" style={{ display: "none" }}>
         <div className="container nav-content">
           <div className="logo">
             <span className="logo-text">TechPrep</span>

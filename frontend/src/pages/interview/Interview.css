@@ -7,39 +7,64 @@
 .interview-header {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    padding: 1.5rem 0;
+    padding: 1rem 2rem;
     position: sticky;
     top: 0;
     z-index: 100;
 }
 
-.interview-header .container {
+.navbar-container {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1.5rem;
+    max-width: 100%;
 }
 
-.back-btn {
+.navbar-center {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.navbar-spacer {
+    width: 1px;
+}
+
+.nav-btn {
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 6px;
+}
+
+.nav-btn:hover {
+    background: var(--background);
+    color: var(--primary);
 }
 
 .interview-title {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 600;
     color: var(--text);
     margin: 0;
 }
 
 .interview-timer {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1.125rem;
-    font-weight: 500;
-    color: var(--primary);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
     font-variant-numeric: tabular-nums;
+    padding: 0.5rem 1rem;
+    background: var(--background);
+    border-radius: 6px;
 }
 
 .interview-status {
