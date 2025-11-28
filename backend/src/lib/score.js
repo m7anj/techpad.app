@@ -61,17 +61,27 @@ Data: ${JSON.stringify(conversationData)}
     const response = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",
         messages: [{
+            role: "system",
+            content: "you are a scoring assistant. you MUST respond with valid json only. no markdown, no code blocks, no explanations. just raw json."
+        }, {
             role: "user",
             content: rules
         }],
         temperature: 0.3,
+        response_format: { type: "json_object" }
     });
 
     let content = response.choices[0].message.content;
-    console.log("Raw AI score response:", content);
+    console.log("raw ai score response:", content);
 
-    // Extract JSON from response
-    let jsonMatch = content.match(/\{.*\}/s);
+    // clean up any markdown code blocks
+    content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+
+    // replace markdown bullets with proper json arrays
+    content = content.replace(/\* /g, '');
+
+    // extract json from response
+    let jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
     }

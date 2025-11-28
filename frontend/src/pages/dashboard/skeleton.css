@@ -1,0 +1,77 @@
+/* Skeleton Loading States */
+.preset-card.skeleton {
+    animation: none;
+    opacity: 1;
+    pointer-events: none;
+}
+
+.skeleton-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.skeleton-title {
+    height: 24px;
+    width: 60%;
+    background: linear-gradient(90deg, var(--border) 25%, var(--surface-elevated) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-badge {
+    height: 26px;
+    width: 80px;
+    background: linear-gradient(90deg, var(--border) 25%, var(--surface-elevated) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 20px;
+}
+
+.skeleton-meta {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.skeleton-tag {
+    height: 20px;
+    width: 100px;
+    background: linear-gradient(90deg, var(--border) 25%, var(--surface-elevated) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-text {
+    height: 16px;
+    width: 100%;
+    background: linear-gradient(90deg, var(--border) 25%, var(--surface-elevated) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-text.short {
+    width: 70%;
+}
+
+.skeleton-button {
+    height: 40px;
+    width: 100%;
+    margin-top: auto;
+    background: linear-gradient(90deg, var(--border) 25%, var(--surface-elevated) 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 6px;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}

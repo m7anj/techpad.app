@@ -31,17 +31,21 @@ export const getCompletedInterviewsByUserId = async (req, res) => {
 
 export const addCompletedInterview = async (clerkUserId, interviewId, questionAnswers, timeTaken, score, feedback) => {
   try {
-    // Get the actual user database ID from clerk ID
+    // get the actual user database id from clerk id
     const user = await getUserByClerkId(clerkUserId);
 
     if (!user) {
-      throw new Error('User not found');
+      console.error('user not found for clerk id:', clerkUserId);
+      // don't crash - just log and return null
+      // this can happen if user hasn't fully onboarded yet
+      return null;
     }
 
     const result = await addInterview(user.id, interviewId, questionAnswers, timeTaken, score, feedback);
     return result;
   } catch (error) {
-    console.error('Error adding completed interview:', error);
-    throw error;
+    console.error('error adding completed interview:', error);
+    // don't throw - return null to prevent crash
+    return null;
   }
 };
