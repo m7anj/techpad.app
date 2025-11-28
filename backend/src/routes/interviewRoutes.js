@@ -96,13 +96,24 @@ export default function setupWebSocketRoutes(app) {
           ws.send(JSON.stringify({ type: "pong" }));
           return;
         } else if (message.type == "questionAnswer") {
-          session.questionAnswers.push(message.content);
+          // Store the full answer with code and whiteboard
+          session.questionAnswers.push({
+            content: message.content,
+            code: message.code,
+            whiteboard: message.whiteboard,
+          });
 
           // Generate followup for this question
           const followup = await generateFollowups(
             session.questions.questions[session.currentQuestionIndex - 1]
               .question,
-            [message.content],
+            [
+              {
+                content: message.content,
+                code: message.code,
+                whiteboard: message.whiteboard,
+              },
+            ],
             session.currentQuestionIndex,
           );
 
@@ -120,7 +131,12 @@ export default function setupWebSocketRoutes(app) {
           console.log("Sending followup:", followupMessage);
           ws.send(JSON.stringify(followupMessage));
         } else if (message.type == "followupAnswer") {
-          session.followupAnswers.push(message.content);
+          // Store the full followup answer with code and whiteboard
+          session.followupAnswers.push({
+            content: message.content,
+            code: message.code,
+            whiteboard: message.whiteboard,
+          });
 
           // Count followups for current question
           const currentQuestionFollowups = session.followupQuestions.filter(

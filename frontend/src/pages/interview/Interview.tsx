@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Webcam from "react-webcam";
 import Editor from "@monaco-editor/react";
 import "./Interview.css";
-import { Whiteboard } from "../../components/Whiteboard";
+import { Whiteboard, WhiteboardRef } from "../../components/Whiteboard";
 
 const Interview = () => {
   const { id } = useParams();
@@ -28,6 +28,9 @@ const Interview = () => {
   // Camera
   const webcamRef = useRef<Webcam>(null);
   const [cameraOn, setCameraOn] = useState(true);
+
+  // Whiteboard
+  const whiteboardRef = useRef<WhiteboardRef>(null);
 
   // WEB SOCKET CONNECTION
   useEffect(() => {
@@ -86,15 +89,33 @@ const Interview = () => {
   const submitAnswer = () => {
     if (!ws || !answer.trim()) return;
 
+    // Get whiteboard canvas and convert to base64
+    let whiteboardBase64 = null;
+    const canvas = whiteboardRef.current?.getCanvas();
+    if (canvas) {
+      const dataURL = canvas.toDataURL("image/png");
+      // Remove the "data:image/png;base64," prefix
+      whiteboardBase64 = dataURL.split(",")[1];
+    }
+
+    // Send message with answer, code, and whiteboard
     ws.send(
       JSON.stringify({
         type: "questionAnswer",
-        content: answer + "\nCode: " + code,
+        content: answer,
+        code: code || null,
+        whiteboard: whiteboardBase64,
       }),
     );
 
+    console.log("📤 Sent answer with:", {
+      answer: answer.substring(0, 50) + "...",
+      hasCode: !!code,
+      hasWhiteboard: !!whiteboardBase64,
+    });
+
     setAnswer("");
-    setCode("");
+    // Note: Not clearing code/whiteboard in case user wants to keep working on them
   };
 
   const formatTime = (seconds: number) => {
@@ -167,6 +188,21 @@ const Interview = () => {
                 </p>
               )}
             </div>
+
+            {/* Answer Section */}
+            <div className="answer-section">
+              <div className="answer-input-group">
+                <textarea
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  placeholder="Type your answer here..."
+                  className="answer-input-compact"
+                />
+                <button onClick={submitAnswer} className="submit-btn-compact">
+                  Send
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Right Column - Tools */}
@@ -192,43 +228,50 @@ const Interview = () => {
             </div>
 
             <div className="tools-content">
-              {activeTab === "code" ? (
-                <div className="code-workspace">
-                  <select
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                    className="language-selector"
-                  >
-                    <option value="javascript">JavaScript</option>
-                    <option value="python">Python</option>
-                    <option value="java">Java</option>
-                    <option value="cpp">C++</option>
-                  </select>
-                  <Editor
-                    height="100%"
-                    language={language}
-                    value={code}
-                    onChange={(value) => setCode(value || "")}
-                    theme="vs-dark"
-                    options={{
-                      minimap: { enabled: false },
-                      fontSize: 16,
-                      lineNumbers: "on",
-                      roundedSelection: false,
-                      scrollBeyondLastLine: false,
-                      automaticLayout: true,
-                      tabSize: 2,
-                      quickSuggestions: false,
-                      suggestOnTriggerCharacters: false,
-                      acceptSuggestionOnCommitCharacter: false,
-                      acceptSuggestionOnEnter: "off",
-                      wordBasedSuggestions: "off",
-                    }}
-                  />
-                </div>
-              ) : (
-                <Whiteboard />
-              )}
+              <div
+                className="code-workspace"
+                style={{ display: activeTab === "code" ? "block" : "none" }}
+              >
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className="language-selector"
+                >
+                  <option value="javascript">JavaScript</option>
+                  <option value="python">Python</option>
+                  <option value="java">Java</option>
+                  <option value="cpp">C++</option>
+                </select>
+                <Editor
+                  height="100%"
+                  language={language}
+                  value={code}
+                  onChange={(value) => setCode(value || "")}
+                  theme="vs-dark"
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 16,
+                    lineNumbers: "on",
+                    roundedSelection: false,
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    tabSize: 2,
+                    quickSuggestions: false,
+                    suggestOnTriggerCharacters: false,
+                    acceptSuggestionOnCommitCharacter: false,
+                    acceptSuggestionOnEnter: "off",
+                    wordBasedSuggestions: "off",
+                  }}
+                />
+              </div>
+              <div
+                style={{
+                  display: activeTab === "whiteboard" ? "block" : "none",
+                  height: "100%",
+                }}
+              >
+                <Whiteboard ref={whiteboardRef} />
+              </div>
             </div>
           </div>
         </div>
