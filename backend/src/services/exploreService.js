@@ -5,9 +5,19 @@ const prisma = new PrismaClient();
 // Get all the different presets in the Interviews table in the database
 // Essentially, how the app works is, it has these presets, and the user can
 // select the one they want to be interviewed in.
-// don't need an include {} here because we're selecting everything
 async function getExplorePresets() {
-  const interviews = await prisma.interview.findMany({});
+  const interviews = await prisma.interview.findMany({
+    select: {
+      id: true,
+      expectedDuration: true,
+      type: true,
+      description: true,
+      topic: true,
+      tags: true,
+      difficulty: true,
+      premium: true,
+    },
+  });
   return interviews;
 }
 

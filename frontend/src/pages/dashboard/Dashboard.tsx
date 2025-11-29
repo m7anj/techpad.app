@@ -5,12 +5,53 @@ import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import { Navbar } from "../../components/Navbar";
 
+const HERO_QUOTES = [
+  "Master Your Technical Interviews",
+  "You Want That Job?",
+  "Practice Your Technical Skills",
+  "Ace Your Next Interview",
+  "Get Interview Ready",
+  "Level Up Your Career",
+  "Land Your Dream Role",
+  "Prep Like a Pro",
+  "Show Them What You Got",
+  "Crush Technical Rounds",
+  "Build Interview Confidence",
+  "Ready to Impress?",
+  "Sharpen Your Skills",
+  "Stand Out From The Crowd",
+  "Own The Interview Room",
+  "Make Your Move",
+  "Time to Level Up",
+  "Prove Your Worth",
+  "Show Your Expertise",
+  "Become Interview Ready",
+  "You're Not Cooked.",
+  "Your future depends on this.",
+  "Get A Fucking Grip.",
+  "Fix Your Life",
+  "Can You Even Code",
+  "AI Will Take Over",
+  "The Future is Now",
+  "The World is Yours",
+  "AI Has Nothing On You",
+  "Get Ready",
+  "Feel The Pressure",
+  "Final Round? What's That?",
+  "Shut Up And Do It",
+  "Stop Coping, Focus!",
+];
+
 const Dashboard = () => {
   const { getToken } = useAuth();
   const navigate = useNavigate();
 
   const [presets, setPresets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedInterview, setSelectedInterview] = useState<any>(null);
+  const [heroQuote] = useState(
+    () => HERO_QUOTES[Math.floor(Math.random() * HERO_QUOTES.length)],
+  );
   const [stats] = useState({
     solved: 0,
     totalProblems: 12,
@@ -49,8 +90,51 @@ const Dashboard = () => {
     fetchPresets();
   }, [getToken]);
 
-  const startInterview = (preset: any) => {
-    navigate(`/interview/${preset.id}`, { state: { preset } });
+  const openInterviewModal = (preset: any) => {
+    setSelectedInterview(preset);
+  };
+
+  const closeModal = () => {
+    setSelectedInterview(null);
+  };
+
+  const startInterview = () => {
+    if (selectedInterview && !selectedInterview.premium) {
+      navigate(`/interview/${selectedInterview.id}`, {
+        state: { preset: selectedInterview },
+      });
+    }
+  };
+
+  const getTagColor = (tag: string): string => {
+    const tagLower = tag.toLowerCase();
+
+    // Programming Languages
+    if (tagLower.includes("c++") || tagLower.includes("cpp")) return "tag-cpp";
+    if (tagLower.includes("java")) return "tag-java";
+    if (tagLower.includes("rust")) return "tag-rust";
+    if (tagLower.includes("python")) return "tag-python";
+    if (tagLower.includes("javascript") || tagLower.includes("js"))
+      return "tag-javascript";
+
+    // Categories
+    if (tagLower.includes("network")) return "tag-networking";
+    if (tagLower.includes("system design") || tagLower.includes("cloud"))
+      return "tag-system-design";
+    if (tagLower.includes("os") || tagLower.includes("operating"))
+      return "tag-os";
+    if (tagLower.includes("devops") || tagLower.includes("admin"))
+      return "tag-devops";
+    if (tagLower.includes("web")) return "tag-web";
+    if (
+      tagLower.includes("data structure") ||
+      tagLower.includes("algorithm") ||
+      tagLower.includes("dsa")
+    )
+      return "tag-dsa";
+
+    // Default
+    return "tag-default";
   };
 
   const progressPercent = (stats.solved / stats.totalProblems) * 100;
@@ -65,73 +149,12 @@ const Dashboard = () => {
           <div className="hero-section">
             <div className="hero-content">
               <h1 className="hero-title">
-                Master Your{" "}
-                <span className="gradient-text">Technical Interviews</span>
+                <span className="gradient-text">{heroQuote}</span>
               </h1>
               <p className="hero-subtitle">
                 Practice coding problems, system design, and behavioral
                 questions with AI-powered feedback
               </p>
-            </div>
-
-            {/* Progress Card */}
-            <div className="progress-card-hero">
-              <div className="progress-header">
-                <div>
-                  <div className="rank-badge">{stats.rank}</div>
-                  <h3>
-                    {stats.solved} / {stats.totalProblems} Solved
-                  </h3>
-                </div>
-                <div className="streak-badge">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                  >
-                    <path
-                      d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  {stats.streak} day streak
-                </div>
-              </div>
-              <div className="progress-bar-container">
-                <div className="progress-bar-track">
-                  <div
-                    className="progress-bar-fill"
-                    style={{ width: `${progressPercent}%` }}
-                  ></div>
-                </div>
-                <span className="progress-percent">
-                  {Math.round(progressPercent)}%
-                </span>
-              </div>
-              <div className="difficulty-stats">
-                <div className="difficulty-item">
-                  <span className="difficulty-label easy">Easy</span>
-                  <span className="difficulty-count">
-                    {stats.easyCompleted}/4
-                  </span>
-                </div>
-                <div className="difficulty-item">
-                  <span className="difficulty-label medium">Medium</span>
-                  <span className="difficulty-count">
-                    {stats.mediumCompleted}/5
-                  </span>
-                </div>
-                <div className="difficulty-item">
-                  <span className="difficulty-label hard">Hard</span>
-                  <span className="difficulty-count">
-                    {stats.hardCompleted}/3
-                  </span>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -153,133 +176,93 @@ const Dashboard = () => {
                 <p>Loading problems...</p>
               </div>
             ) : (
-              <div className="problems-list">
+              <div className="problems-table">
                 {presets && presets.length > 0 ? (
-                  presets.map((preset) => (
-                    <div key={preset.id} className="problem-row">
-                      <div className="problem-status">
-                        <div className="status-circle"></div>
-                      </div>
-                      <div className="problem-main">
-                        <div className="problem-header">
-                          <h3 className="problem-title">
-                            {preset.type}
-                            {preset.premium && (
-                              <span className="premium-badge">
-                                <svg
-                                  width="12"
-                                  height="12"
-                                  viewBox="0 0 24 24"
-                                  fill="currentColor"
-                                >
-                                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                                </svg>
-                                PRO
-                              </span>
-                            )}
-                          </h3>
-                          <div className="problem-badges">
-                            <span
-                              className={`difficulty-badge ${preset.difficulty?.toLowerCase() || "medium"}`}
-                            >
-                              {preset.difficulty || "Medium"}
-                            </span>
-                          </div>
+                  presets.map((preset, index) => (
+                    <div
+                      key={preset.id}
+                      className={`problem-row ${preset.premium ? "premium-locked" : ""}`}
+                      onClick={() => openInterviewModal(preset)}
+                    >
+                      <div className="row-left">
+                        <div className="td-status">
+                          <div className="status-dot"></div>
                         </div>
-                        <div className="problem-meta">
-                          <span className="problem-topic">{preset.topic}</span>
-                          <span className="meta-separator">•</span>
-                          <span className="problem-time">
+                        <div className="td-number">{index + 1}.</div>
+                        <div className="td-title-group">
+                          <span className="problem-title">{preset.type}</span>
+                          {preset.topic && (
+                            <span className="problem-topic">
+                              {preset.topic}
+                            </span>
+                          )}
+                        </div>
+                        <div className="td-tags">
+                          {preset.tags && preset.tags.length > 0 && (
+                            <>
+                              {preset.tags
+                                .slice(0, 3)
+                                .map((tag: string, idx: number) => (
+                                  <span
+                                    key={idx}
+                                    className={`tag-badge ${getTagColor(tag)}`}
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="row-right">
+                        <div className="td-difficulty">
+                          <span
+                            className={`difficulty-pill ${preset.difficulty?.toLowerCase() || "medium"}`}
+                          >
+                            {preset.difficulty || "Medium"}
+                          </span>
+                        </div>
+                        <div className="td-lock">
+                          {preset.premium ? (
                             <svg
-                              width="14"
-                              height="14"
+                              width="16"
+                              height="16"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
+                              strokeWidth="2"
                             >
-                              <circle cx="12" cy="12" r="10" strokeWidth="2" />
-                              <polyline
-                                points="12 6 12 12 16 14"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
+                              <rect
+                                x="3"
+                                y="11"
+                                width="18"
+                                height="11"
+                                rx="2"
+                                ry="2"
                               />
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                             </svg>
-                            {preset.expectedDuration} min
-                          </span>
-                        </div>
-                        <p className="problem-description">
-                          {preset.description}
-                        </p>
-                        {preset.tags && preset.tags.length > 0 && (
-                          <div className="problem-tags">
-                            {preset.tags.map((tag: string, index: number) => (
-                              <span key={index} className="tag">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="problem-action">
-                        <button
-                          className="solve-btn"
-                          onClick={() => startInterview(preset)}
-                          disabled={preset.premium}
-                        >
-                          {preset.premium ? (
-                            <>
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                              >
-                                <rect
-                                  x="3"
-                                  y="11"
-                                  width="18"
-                                  height="11"
-                                  rx="2"
-                                  ry="2"
-                                  strokeWidth="2"
-                                />
-                                <path
-                                  d="M7 11V7a5 5 0 0 1 10 0v4"
-                                  strokeWidth="2"
-                                />
-                              </svg>
-                              Locked
-                            </>
                           ) : (
-                            <>
-                              Start
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                              >
-                                <line
-                                  x1="5"
-                                  y1="12"
-                                  x2="19"
-                                  y2="12"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                />
-                                <polyline
-                                  points="12 5 19 12 12 19"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </>
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <rect
+                                x="3"
+                                y="11"
+                                width="18"
+                                height="11"
+                                rx="2"
+                                ry="2"
+                              />
+                              <path d="M7 11V7a5 5 0 0 1 9.9 0M7 11v4" />
+                            </svg>
                           )}
-                        </button>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -320,6 +303,104 @@ const Dashboard = () => {
           </section>
         </div>
       </main>
+
+      {/* Interview Modal */}
+      {selectedInterview && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={closeModal}>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
+            <div className="modal-header">
+              <h2>{selectedInterview.type}</h2>
+              <div className="modal-badges">
+                <span
+                  className={`difficulty-pill ${selectedInterview.difficulty?.toLowerCase() || "medium"}`}
+                >
+                  {selectedInterview.difficulty || "Medium"}
+                </span>
+                {selectedInterview.premium && (
+                  <span className="premium-modal-badge">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    Premium
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {selectedInterview.topic && (
+              <div className="modal-topic">{selectedInterview.topic}</div>
+            )}
+
+            <div className="modal-description">
+              {selectedInterview.description}
+            </div>
+
+            {selectedInterview.tags && selectedInterview.tags.length > 0 && (
+              <div className="modal-tags">
+                {selectedInterview.tags.map((tag: string, idx: number) => (
+                  <span key={idx} className={`tag-badge ${getTagColor(tag)}`}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="modal-actions">
+              {selectedInterview.premium ? (
+                <button className="btn-start locked" disabled>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  Upgrade to Premium
+                </button>
+              ) : (
+                <button className="btn-start" onClick={startInterview}>
+                  Start Interview
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

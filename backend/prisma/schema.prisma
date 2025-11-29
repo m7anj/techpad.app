@@ -1,61 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource database {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-
 model User {
-  id                    String          @id @default(uuid())
-  clerkId               String          @unique
-  email                 String          @unique
-  username              String?         @unique
-  profilePicture        String?
-
-  subTeir               String          @default("free")
-  createdAt             DateTime        @default(now())
-  completedInterviews   completedInterview[]
+  id                  String               @id @default(uuid())
+  clerkId             String               @unique
+  email               String               @unique
+  subTeir             String               @default("free")
+  createdAt           DateTime             @default(now())
+  profilePicture      String?
+  username            String?              @unique
+  completedInterviews completedInterview[]
 }
-
 
 model completedInterview {
-  id                    String        @id @default(uuid())
-
-  userId                String
+  id          String    @id @default(uuid())
+  userId      String
+  interviewId String
+  timeTaken   Int
+  score       Float?
+  completedAt DateTime  @default(now())
+  feedback    Json?
+  messages    Message[]
+  interview   Interview @relation(fields: [interviewId], references: [id])
   user        User      @relation(fields: [userId], references: [id])
-
-  interviewId           String
-  interview             Interview @relation(fields: [interviewId], references: [id])
-
-  timeTaken             Int
-  score                 Float?
-  feedback              Json?
-  completedAt           DateTime      @default(now())
-  messages              Message[]
 }
-
 
 model Interview {
-  id                    String        @id @default(uuid())
-  expectedDuration      Int                    
-  type                  String
-  description           String
-  prompt                String        @database.Text
-  topic                 String?
-  
-  completedInterviews   completedInterview[]
+  id                  String               @id @default(uuid())
+  type                String
+  topic               String?
+  description         String
+  expectedDuration    Int
+  prompt              String
+  tags                String[]             @default([])
+  difficulty          String               @default("Medium")
+  premium             Boolean              @default(false)
+  completedInterviews completedInterview[]
 }
 
-
 model Message {
-  id                    String        @id @default(uuid())
-  completedInterviewId  String
-  completedInterview    completedInterview @relation(fields: [completedInterviewId], references: [id])
-  content               String        @database.Text
-  sequence              Int
-  role                  String    
+  id                   String             @id @default(uuid())
+  completedInterviewId String
+  content              String
+  sequence             Int
+  role                 String
+  completedInterview   completedInterview @relation(fields: [completedInterviewId], references: [id])
 }

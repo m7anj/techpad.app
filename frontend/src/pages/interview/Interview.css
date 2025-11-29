@@ -1,3 +1,5 @@
+/* Interview Page */
+
 .interview-page {
     min-height: 100vh;
     background: var(--background);
@@ -329,6 +331,13 @@
     font-size: 1rem;
 }
 
+.tools-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Code Workspace */
 .code-workspace {
     position: relative;
     width: 100%;
@@ -369,12 +378,6 @@
 .whiteboard-clear:hover {
     background: var(--background);
     border-color: var(--text-muted);
-}
-
-.tools-content {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
 }
 
 /* Code Editor */

@@ -8,54 +8,31 @@ const groq = new Groq({
 });
 
 async function generateInterviewScore(conversationData, interviewType) {
-    const rules = `
+    // Summarize conversation to reduce token count
+    const summary = conversationData.map((msg, idx) => {
+        const content = msg.content?.substring(0, 500) || ''; // Limit each message to 500 chars
+        return `Q${idx + 1}: ${content}`;
+    }).join('\n');
 
-Tech interview scoring system. Evaluate the candidate strictly based on their responses. Assign **three category scores (0–100)** and compute a **weighted overall score** using:
+    const rules = `Tech interview scoring system. Evaluate based on responses.
 
-* **TECHNICAL — 40% weight**
-  Assess correctness, depth, and clarity of technical reasoning. Strong candidates:
-  • demonstrate solid understanding of algorithms, data structures, and system design
-  • explain trade-offs and complexity
-  • consider edge cases and alternative approaches
+**Scoring (0-100):**
+- TECHNICAL (40%): correctness, depth, trade-offs
+- PROBLEM-SOLVING (30%): logical approach, optimization
+- COMMUNICATION (30%): clarity, structure
 
-* **PROBLEM-SOLVING — 30% weight**
-  Evaluate how they approach challenges. Strong candidates:
-  • break problems down logically
-  • explore multiple pathways
-  • optimize solutions
-  • identify risks, constraints, and missing information
-
-* **COMMUNICATION — 30% weight**
-  Assess how clearly and effectively they explain ideas. Strong candidates:
-  • speak concisely and coherently
-  • use accurate technical vocabulary
-  • maintain structured, step-by-step explanations
-
-**Scoring rules:**
-
-* Each category score must be between **0 and 100**.
-* The **overall score** must be the **weighted average** using the category weights above.
-* Make scores consistent with the quality of the conversation data.
-* Be explicit about strengths and gaps, using short bullet points.
-* Provide practical, actionable improvement suggestions.
-
-**Output JSON format (strict):**
-
+**Output JSON:**
 {
   "overallScore": N,
-  "breakdown": {
-    "technical": N,
-    "problemSolving": N,
-    "communication": N
-  },
-  "strengths": [],
-  "gaps": [],
-  "improvement": []
+  "breakdown": {"technical": N, "problemSolving": N, "communication": N},
+  "strengths": ["..."],
+  "gaps": ["..."],
+  "improvement": ["..."]
 }
 
-
 Type: ${interviewType}
-Data: ${JSON.stringify(conversationData)}
+Conversation Summary:
+${summary}
 `;
 
     const response = await groq.chat.completions.create({

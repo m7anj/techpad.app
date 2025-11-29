@@ -220,12 +220,25 @@ export default function setupWebSocketRoutes(app) {
 
       // WebSocket: close Interview handling
 
-      ws.on("close", function () {
-        const completedSession = activeSessions.get(sessionId); // extract session and use as param for closeInterview
-        console.log(
-          "Session completed: " + JSON.stringify(completedSession, null, 2),
-        ); // test gfdsdsfdsf
-        closeInterview(req.params.id, completedSession, clerkUserId);
+      ws.on("close", async function () {
+        try {
+          const completedSession = activeSessions.get(sessionId);
+          if (completedSession) {
+            console.log(`🔌 Session ${sessionId} disconnected - saving data...`);
+            await closeInterview(req.params.id, completedSession, clerkUserId);
+            activeSessions.delete(sessionId);
+            console.log(`✅ Session ${sessionId} saved and cleaned up`);
+          } else {
+            console.log(`⚠️ Session ${sessionId} not found on close`);
+          }
+        } catch (error) {
+          console.error(`❌ Error closing session ${sessionId}:`, error);
+        }
+      });
+
+      // WebSocket: error handling
+      ws.on("error", function (error) {
+        console.error(`❌ WebSocket error for session ${sessionId}:`, error);
       });
     } catch (error) {
       console.log(`❌ Error setting up interview: ${error.message}`);

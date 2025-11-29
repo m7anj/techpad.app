@@ -11,54 +11,57 @@ async function generateFollowups(currentQuestion, responses, questionIndex) {
   const lastResponse = responses[responses.length - 1];
   const followupCount = responses.length - 1;
 
-  // Format the response with all available data
-  let responseText = "";
-  let hasCode = false;
-  let hasWhiteboard = false;
+  // Build conversation history for context
+  let conversationHistory = `ORIGINAL QUESTION: "${currentQuestion}"\n\n`;
 
-  if (typeof lastResponse === "string") {
-    responseText = lastResponse;
-  } else {
-    responseText = lastResponse.content || "";
-    if (lastResponse.code && lastResponse.code.trim()) {
-      responseText += `\n\n[CODE]:\n${lastResponse.code}`;
-      hasCode = true;
+  // Add all previous responses to give AI full context
+  responses.forEach((resp, idx) => {
+    const isLast = idx === responses.length - 1;
+    let respText = "";
+    let hasCode = false;
+    let hasWhiteboard = false;
+
+    if (typeof resp === "string") {
+      respText = resp;
+    } else {
+      respText = resp.content || "";
+      if (resp.code && resp.code.trim()) {
+        respText += `\n\n[CODE]:\n${resp.code}`;
+        hasCode = true;
+      }
+      if (resp.whiteboard) {
+        hasWhiteboard = true;
+      }
     }
-    // Only set flag if whiteboard exists, but DON'T add text about it
-    // Let the image speak for itself
-    if (lastResponse.whiteboard) {
-      hasWhiteboard = true;
-    }
-  }
 
-  const rules = `You are a technical interviewer. The candidate just responded.
+    conversationHistory += `${isLast ? 'LATEST ' : ''}RESPONSE ${idx + 1}:\n"${respText}"\n${hasCode ? '[Has code]\n' : ''}${hasWhiteboard ? '[Has whiteboard]\n' : ''}\n`;
+  });
 
-WHAT THEY PROVIDED:
-${hasCode ? "✓ Text answer\n✓ Code snippet" : "✓ Text answer"}${hasWhiteboard ? "\n✓ Whiteboard drawing (see image)" : ""}
+  const lastResponseData = typeof lastResponse === "string"
+    ? { content: lastResponse }
+    : lastResponse;
 
-THEIR RESPONSE:
-"${responseText}"
+  const hasCode = lastResponseData.code && lastResponseData.code.trim();
+  const hasWhiteboard = lastResponseData.whiteboard;
 
-CRITICAL RULES:
-1. ONLY reference what you actually see:
-   - Their text: "${lastResponse.content || responseText}"
-   ${hasCode ? `- Their code: Yes, they wrote code` : "- Their code: NO CODE PROVIDED"}
-   ${hasWhiteboard ? "- Their whiteboard: YES, look at the image attached" : "- Their whiteboard: BLANK - DO NOT MENTION IT"}
+  const rules = `You're interviewing someone. Here's what YOU asked and what THEY said:
 
-2. Priority: Respond to TEXT first, then CODE (if exists), then DIAGRAM (if drawn).
+${conversationHistory}
 
-3. If whiteboard is blank, DO NOT ask about drawings. Focus on their text${hasCode ? " and code" : ""}.
+Listen - YOU asked them "${currentQuestion}". That was YOUR question. You own it.
 
-4. Ask ONE follow-up that:
-   - Probes their reasoning or tests edge cases
-   - Is based ONLY on what they actually provided
-   - Sounds natural and human
-   - Doesn't repeat what they said
+Now they just responded. Here's what to do:
 
-${followupCount >= 1 ? "FINAL follow-up for this question." : ""}
+1. If they're asking YOU to clarify or elaborate on something YOU said, then clarify it. Don't act confused. You asked the question, so explain what you meant.
 
-OUTPUT (JSON only, no markdown):
-{"followup":{"forWhatQuestion":${questionIndex},"followupQuestion":"","isThisTheEnd":${followupCount >= 1}}}`;
+2. If they answered, ask ONE follow-up that digs deeper or tests their understanding. Be conversational. Talk like a human, not a robot.
+
+3. Keep it natural. No "great question!" or "excellent point!" bullshit. Just respond like you're having a real conversation.
+
+${followupCount >= 1 ? "This is your LAST follow-up for this question. Make it count." : ""}
+
+Return JSON only (no markdown):
+{"followup":{"forWhatQuestion":${questionIndex},"followupQuestion":"YOUR RESPONSE HERE","isThisTheEnd":${followupCount >= 1}}}`;
 
   // Build message content with vision support
   const messageContent = [];

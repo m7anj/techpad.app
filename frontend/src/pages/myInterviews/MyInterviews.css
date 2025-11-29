@@ -1,3 +1,5 @@
+/* My Interviews Page */
+
 .my-interviews {
     min-height: 100vh;
     background: var(--background);
@@ -22,6 +24,7 @@
     font-size: 1.1rem;
 }
 
+/* Shared states */
 .loading-state,
 .error-state,
 .empty-state {
@@ -54,7 +57,8 @@
 }
 
 .loading-state p,
-.error-state p {
+.error-state p,
+.empty-state p {
     color: var(--text-muted);
     font-size: 1.1rem;
 }
@@ -69,11 +73,7 @@
     color: var(--text);
 }
 
-.empty-state p {
-    color: var(--text-muted);
-    font-size: 1.1rem;
-}
-
+/* Interviews Table */
 .interviews-table-container {
     background: var(--surface-glass);
     backdrop-filter: blur(20px);
@@ -149,6 +149,7 @@
     font-style: italic;
 }
 
+/* Responsive */
 @media (max-width: 768px) {
     .interviews-table-container {
         overflow-x: auto;

@@ -41,6 +41,12 @@ html {
     height: 100%;
     overflow: hidden;
     overflow-y: scroll;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar {
+    display: none;
 }
 
 body {
@@ -69,6 +75,12 @@ body {
     overflow-y: auto;
     overflow-x: hidden;
     position: relative;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.app::-webkit-scrollbar {
+    display: none;
 }
 
 /* Typography */
