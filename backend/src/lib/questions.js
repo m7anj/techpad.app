@@ -7,10 +7,11 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-async function generateQuestions(p) {
+async function generateQuestions(p, d, t) {
   const rules = `
 
     You are a technical interviewer conducting a realistic mock interview.
+    DIFFICULTY TYPE: ${d}, TAGS: ${t}
     Your job is to generate technical interview questions based on the topic: ${p}
 
     --- INTERVIEW BEHAVIOR RULES ---

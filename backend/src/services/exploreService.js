@@ -7,14 +7,13 @@ const prisma = new PrismaClient();
 // select the one they want to be interviewed in.
 // don't need an include {} here because we're selecting everything
 async function getExplorePresets() {
-  const interviews = await prisma.interview.findMany({
-  });
+  const interviews = await prisma.interview.findMany({});
   return interviews;
 }
 
 // Get a specific preset by its id. If a user selects a preset, we'll use this
 // to get the data for the interview so they can see the stuff before they
-// get their hands dirty! 
+// get their hands dirty!
 async function getExplorePresetById(id) {
   const interview = await prisma.interview.findUnique({
     where: {
@@ -27,12 +26,11 @@ async function getExplorePresetById(id) {
       description: true,
       prompt: true,
       topic: true,
+      tags: true,
+      difficulty: true,
     },
   });
   return interview;
 }
 
-export {
-  getExplorePresets,
-  getExplorePresetById,
-};
+export { getExplorePresets, getExplorePresetById };
