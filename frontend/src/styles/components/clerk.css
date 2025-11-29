@@ -1,25 +1,160 @@
-/* Minimal Clerk Styling */
+/* Dark Mode Clerk Styling */
 .cl-rootBox,
-.cl-headerTitle, .cl-headerSubtitle, .cl-formFieldLabel, .cl-formFieldInput,
-.cl-button, .cl-formButtonPrimary, .cl-socialButtonsBlockButton,
-.cl-userPreviewMainIdentifier, .cl-userPreviewSecondaryIdentifier,
-.cl-userButtonPopoverActionButton, .cl-profileSectionTitle,
-.cl-navbarButton, .cl-footerActionLink, .cl-dividerText {
-  font-family: 'Space Grotesk', system-ui, sans-serif !important;
+.cl-card,
+.cl-modalContent,
+.cl-userButtonPopoverCard {
+    background: rgba(17, 17, 23, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow:
+        0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+        0 12px 48px -4px rgba(0, 0, 0, 0.5),
+        0 8px 32px -4px rgba(139, 92, 246, 0.15) !important;
+}
+
+.cl-headerTitle,
+.cl-headerSubtitle,
+.cl-formFieldLabel,
+.cl-formFieldInput,
+.cl-button,
+.cl-formButtonPrimary,
+.cl-socialButtonsBlockButton,
+.cl-userPreviewMainIdentifier,
+.cl-userPreviewSecondaryIdentifier,
+.cl-userButtonPopoverActionButton,
+.cl-profileSectionTitle,
+.cl-navbarButton,
+.cl-footerActionLink,
+.cl-dividerText {
+    font-family: "Inter", system-ui, sans-serif !important;
+}
+
+/* Text Colors */
+.cl-headerTitle,
+.cl-formFieldLabel,
+.cl-userPreviewMainIdentifier,
+.cl-profileSectionTitle,
+.cl-userButtonPopoverActionButtonText {
+    color: #e2e8f0 !important;
+}
+
+.cl-headerSubtitle,
+.cl-userPreviewSecondaryIdentifier,
+.cl-dividerText {
+    color: #94a3b8 !important;
+}
+
+/* Input Fields */
+.cl-formFieldInput,
+.cl-formFieldInput:focus,
+.cl-input {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: #e2e8f0 !important;
+}
+
+.cl-formFieldInput:focus {
+    border-color: #8b5cf6 !important;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1) !important;
+}
+
+/* Primary Button */
+.cl-formButtonPrimary,
+.cl-button[data-variant="primary"] {
+    background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%) !important;
+    border: none !important;
+    box-shadow:
+        0 1px 0 0 rgba(255, 255, 255, 0.2) inset,
+        0 4px 16px -2px rgba(139, 92, 246, 0.3) !important;
+}
+
+.cl-formButtonPrimary:hover,
+.cl-button[data-variant="primary"]:hover {
+    background: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 100%) !important;
+    box-shadow:
+        0 1px 0 0 rgba(255, 255, 255, 0.2) inset,
+        0 6px 24px -2px rgba(139, 92, 246, 0.4) !important;
+}
+
+/* Secondary/Ghost Buttons */
+.cl-socialButtonsBlockButton,
+.cl-button[data-variant="ghost"],
+.cl-userButtonPopoverActionButton {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: #e2e8f0 !important;
+}
+
+.cl-socialButtonsBlockButton:hover,
+.cl-button[data-variant="ghost"]:hover,
+.cl-userButtonPopoverActionButton:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(139, 92, 246, 0.3) !important;
+}
+
+/* Divider */
+.cl-dividerLine {
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Links */
+.cl-footerActionLink,
+.cl-navbarButton {
+    color: #8b5cf6 !important;
+}
+
+.cl-footerActionLink:hover,
+.cl-navbarButton:hover {
+    color: #a78bfa !important;
 }
 
 /* Hide branding */
-.cl-footer, .cl-footerText, .cl-footerActionText, .cl-branded,
+.cl-footer,
+.cl-footerText,
+.cl-footerActionText,
+.cl-branded,
 .cl-userButtonPopoverFooter,
-[data-localization-key*="footer"], [data-localization-key*="secured"],
-[data-localization-key*="development"], [data-localization-key*="powered"],
-[data-localization-key*="clerk"], [data-localization-key="signIn.start.subtitle"],
+[data-localization-key*="footer"],
+[data-localization-key*="secured"],
+[data-localization-key*="development"],
+[data-localization-key*="powered"],
+[data-localization-key*="clerk"],
+[data-localization-key="signIn.start.subtitle"],
 [data-localization-key="signUp.start.subtitle"] {
-  display: none !important;
+    display: none !important;
 }
 
-/* Remove hover effects */
-.cl-userButtonAvatar:hover, .cl-avatarImage:hover {
-  box-shadow: none !important;
-  outline: none !important;
+/* User Button */
+.cl-userButtonTrigger,
+.cl-userButtonAvatarBox {
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.cl-userButtonTrigger:hover {
+    border-color: rgba(139, 92, 246, 0.3) !important;
+}
+
+/* Remove default hover effects */
+.cl-userButtonAvatar:hover,
+.cl-avatarImage:hover {
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* Scrollbar for popover */
+.cl-userButtonPopoverCard ::-webkit-scrollbar {
+    width: 8px;
+}
+
+.cl-userButtonPopoverCard ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.cl-userButtonPopoverCard ::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.3);
+    border-radius: 4px;
+}
+
+.cl-userButtonPopoverCard ::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.5);
 }

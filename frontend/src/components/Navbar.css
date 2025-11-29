@@ -1,58 +1,113 @@
-/* Copy styles from Dashboard.css */
+/* Glass Navbar - Dark Mode */
 .nav {
-    background: var(--surface);
+    background: rgba(17, 17, 23, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
     z-index: 100;
+    box-shadow:
+        0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+        0 4px 24px -2px rgba(0, 0, 0, 0.3),
+        0 2px 8px -2px rgba(139, 92, 246, 0.1);
+}
+
+.nav::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(139, 92, 246, 0.5) 50%,
+        transparent
+    );
 }
 
 .nav-content {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1rem 0;
+    padding: 1.25rem 0;
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
 }
 
 .logo {
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--text);
-}
-
-.logo-text {
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    transform: translateZ(0);
 }
 
 .nav-links {
     display: flex;
-    gap: 2rem;
+    gap: 0.5rem;
+    position: relative;
 }
 
 .nav-link {
-    display: flex;
+    position: relative;
+    display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
     color: var(--text-muted);
     text-decoration: none;
-    font-size: 0.875rem;
+    font-size: 0.95rem;
     font-weight: 500;
-    transition: color 0.2s ease;
+    border-radius: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
+    border: none;
 }
 
 .nav-link:hover {
     color: var(--text);
+    transform: scale(1.05);
 }
 
-.nav-icon {
-    width: 20px;
-    height: 20px;
+.nav-link.active {
+    color: var(--text);
+    font-weight: 600;
 }
 
 .nav-actions {
     display: flex;
     align-items: center;
+    transform: translateZ(0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .nav-content {
+        padding: 1rem 0;
+    }
+
+    .nav-links {
+        gap: 0.25rem;
+    }
+
+    .nav-link {
+        padding: 0.625rem 1rem;
+        font-size: 0.875rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .logo {
+        font-size: 1.25rem;
+    }
+
+    .nav-link {
+        padding: 0.5rem 0.875rem;
+        font-size: 0.8rem;
+    }
 }
