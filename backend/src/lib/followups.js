@@ -87,7 +87,7 @@ OUTPUT (JSON only, no markdown):
         content: messageContent,
       },
     ],
-    temperature: 0.3,
+    temperature: 0.5,
   });
 
   // Clean the response - remove markdown code blocks if present

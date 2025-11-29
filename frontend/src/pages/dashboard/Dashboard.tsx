@@ -155,69 +155,130 @@ const Dashboard = () => {
             ) : (
               <div className="problems-list">
                 {presets && presets.length > 0 ? (
-                  presets.map((preset, index) => (
+                  presets.map((preset) => (
                     <div key={preset.id} className="problem-row">
                       <div className="problem-status">
                         <div className="status-circle"></div>
                       </div>
-                      <div className="problem-number">#{index + 1}</div>
-                      <div className="problem-info">
-                        <h3 className="problem-title">{preset.type}</h3>
-                        <p className="problem-topic">{preset.topic}</p>
-                      </div>
-                      <div className="problem-difficulty">
-                        <span
-                          className={`difficulty-badge ${getDifficulty(index)}`}
-                        >
-                          {getDifficulty(index)}
-                        </span>
-                      </div>
-                      <div className="problem-time">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                        >
-                          <circle cx="12" cy="12" r="10" strokeWidth="2" />
-                          <polyline
-                            points="12 6 12 12 16 14"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                        {preset.expectedDuration} min
+                      <div className="problem-main">
+                        <div className="problem-header">
+                          <h3 className="problem-title">
+                            {preset.type}
+                            {preset.premium && (
+                              <span className="premium-badge">
+                                <svg
+                                  width="12"
+                                  height="12"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                >
+                                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                </svg>
+                                PRO
+                              </span>
+                            )}
+                          </h3>
+                          <div className="problem-badges">
+                            <span
+                              className={`difficulty-badge ${preset.difficulty?.toLowerCase() || "medium"}`}
+                            >
+                              {preset.difficulty || "Medium"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="problem-meta">
+                          <span className="problem-topic">{preset.topic}</span>
+                          <span className="meta-separator">•</span>
+                          <span className="problem-time">
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                            >
+                              <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                              <polyline
+                                points="12 6 12 12 16 14"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                            {preset.expectedDuration} min
+                          </span>
+                        </div>
+                        <p className="problem-description">
+                          {preset.description}
+                        </p>
+                        {preset.tags && preset.tags.length > 0 && (
+                          <div className="problem-tags">
+                            {preset.tags.map((tag: string, index: number) => (
+                              <span key={index} className="tag">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="problem-action">
                         <button
                           className="solve-btn"
                           onClick={() => startInterview(preset)}
+                          disabled={preset.premium}
                         >
-                          Solve
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                          >
-                            <line
-                              x1="5"
-                              y1="12"
-                              x2="19"
-                              y2="12"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                            />
-                            <polyline
-                              points="12 5 19 12 12 19"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
+                          {preset.premium ? (
+                            <>
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                              >
+                                <rect
+                                  x="3"
+                                  y="11"
+                                  width="18"
+                                  height="11"
+                                  rx="2"
+                                  ry="2"
+                                  strokeWidth="2"
+                                />
+                                <path
+                                  d="M7 11V7a5 5 0 0 1 10 0v4"
+                                  strokeWidth="2"
+                                />
+                              </svg>
+                              Locked
+                            </>
+                          ) : (
+                            <>
+                              Start
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                              >
+                                <line
+                                  x1="5"
+                                  y1="12"
+                                  x2="19"
+                                  y2="12"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                />
+                                <polyline
+                                  points="12 5 19 12 12 19"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>
@@ -262,24 +323,5 @@ const Dashboard = () => {
     </div>
   );
 };
-
-// Helper function to assign difficulty
-function getDifficulty(index: number): string {
-  const difficulties = [
-    "Easy",
-    "Easy",
-    "Medium",
-    "Medium",
-    "Easy",
-    "Hard",
-    "Medium",
-    "Hard",
-    "Medium",
-    "Easy",
-    "Hard",
-    "Medium",
-  ];
-  return difficulties[index % difficulties.length];
-}
 
 export default Dashboard;

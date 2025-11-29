@@ -68,7 +68,7 @@ async function generateQuestions(p, d, t) {
         content: p,
       },
     ],
-    temperature: 0.6,
+    temperature: 0.8,
   });
 
   return JSON.parse(response.choices[0].message.content.trim());

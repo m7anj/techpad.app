@@ -28,6 +28,7 @@ async function getExplorePresetById(id) {
       topic: true,
       tags: true,
       difficulty: true,
+      premium: true,
     },
   });
   return interview;
