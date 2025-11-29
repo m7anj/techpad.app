@@ -534,3 +534,18 @@
         display: none;
     }
 }
+
+.no-scrollbar {
+    overflow: auto; /* allow scrolling */
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none;
+    overflow-y: hidden; /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar::-webkit-scrollbar-thumb {
+    display: none;
+}
