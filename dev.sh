@@ -25,7 +25,7 @@ cd backend && npm run dev &
 BACKEND_PID=$!
 
 # Start frontend server in background
-echo -e "${BLUE}Starting frontend server...${NC}"
+echo -e "${BLUE}Starting frontend server..${NC}"
 cd frontend && npm run dev &
 FRONTEND_PID=$!
 
