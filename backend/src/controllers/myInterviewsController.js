@@ -19,10 +19,21 @@ export const getCompletedInterviewsByUserId = async (req, res) => {
     const interviews = await getCompletedInterviews(user.id);
 
     if (!interviews || interviews.length === 0) {
-      return res.status(404).json({ message: 'There are no interviews conducted' });
+      return res.status(200).json({ interviews: [] });
     }
 
-    res.status(200).json(interviews);
+    // Format the response for frontend
+    const formattedInterviews = interviews.map(interview => ({
+      _id: interview.id,
+      userId: user.id,
+      interviewType: interview.interview.type,
+      completedAt: interview.completedAt,
+      duration: interview.timeTaken,
+      score: interview.score,
+      feedback: interview.feedback,
+    }));
+
+    res.status(200).json({ interviews: formattedInterviews });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error!' });

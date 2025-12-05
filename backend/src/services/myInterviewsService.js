@@ -13,6 +13,16 @@ async function getCompletedInterviewsByUserId(userId) {
             score: true,
             feedback: true,
             completedAt: true,
+            interview: {
+                select: {
+                    id: true,
+                    type: true,
+                    topic: true,
+                    description: true,
+                    difficulty: true,
+                    tags: true,
+                },
+            },
             messages: {
                 select: {
                     id: true,
@@ -21,6 +31,9 @@ async function getCompletedInterviewsByUserId(userId) {
                     role: true,
                 },
             },
+        },
+        orderBy: {
+            completedAt: 'desc',
         },
     });
 
