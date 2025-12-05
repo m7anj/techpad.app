@@ -17,6 +17,7 @@
   "description": "",
   "dependencies": {
     "@clerk/backend": "^2.20.0",
+    "@clerk/clerk-sdk-node": "^4.13.23",
     "@clerk/express": "^1.7.50",
     "@prisma/client": "^6.19.0",
     "@types/express": "^5.0.5",
@@ -31,6 +32,7 @@
     "openai": "^6.8.1",
     "prisma": "^6.19.0",
     "stripe": "^19.3.0",
+    "svix": "^1.82.0",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
