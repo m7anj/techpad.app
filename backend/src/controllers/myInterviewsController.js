@@ -19,7 +19,7 @@ export const getCompletedInterviewsByUserId = async (req, res) => {
     const interviews = await getCompletedInterviews(user.id);
 
     if (!interviews || interviews.length === 0) {
-      return res.status(200).json({ interviews: [] });
+w      return res.status(200).json({ interviews: [] });
     }
 
     // Format the response for frontend

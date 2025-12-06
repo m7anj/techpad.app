@@ -95,6 +95,12 @@
     gap: 1rem;
 }
 
+.auth-buttons {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
 .trial-note {
     font-size: 0.875rem;
     color: var(--text-subtle);
