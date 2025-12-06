@@ -5,7 +5,6 @@ import { getUserByIdHandler } from "../controllers/userController.js";
 const router = express.Router();
 
 router.get("/me", requireAuth(), getUserByIdHandler);
-cccccccccccccccccc
 router.post("/webhooks/clerk", requireAuth(), async (req, res) => {
   try {
     const { id } = req.body;
