@@ -4,43 +4,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 import { Navbar } from "../../components/Navbar";
-
-const HERO_QUOTES = [
-  "Master Your Technical Interviews",
-  "You Want That Job?",
-  "Practice Your Technical Skills",
-  "Ace Your Next Interview",
-  "Get Interview Ready",
-  "Level Up Your Career",
-  "Land Your Dream Role",
-  "Prep Like a Pro",
-  "Show Them What You Got",
-  "Crush Technical Rounds",
-  "Build Interview Confidence",
-  "Ready to Impress?",
-  "Sharpen Your Skills",
-  "Stand Out From The Crowd",
-  "Own The Interview Room",
-  "Make Your Move",
-  "Time to Level Up",
-  "Prove Your Worth",
-  "Show Your Expertise",
-  "Become Interview Ready",
-  "You're Not Cooked.",
-  "Your future depends on this.",
-  "Get A Fucking Grip.",
-  "Fix Your Life",
-  "Can You Even Code",
-  "AI Will Take Over",
-  "The Future is Now",
-  "The World is Yours",
-  "AI Has Nothing On You",
-  "Get Ready",
-  "Feel The Pressure",
-  "Final Round? What's That?",
-  "Shut Up And Do It",
-  "Stop Coping, Focus!",
-];
+import HERO_QUOTES from "./quotes";
 
 const Dashboard = () => {
   const { getToken } = useAuth();
