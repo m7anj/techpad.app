@@ -3,72 +3,100 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function getCompletedInterviewsByUserId(userId) {
-    const completedInterviews = await prisma.completedInterview.findMany({
-        where: {
-            userId,
-        },
+  const completedInterviews = await prisma.completedInterview.findMany({
+    where: {
+      userId,
+    },
+    select: {
+      id: true,
+      timeTaken: true,
+      score: true,
+      feedback: true,
+      completedAt: true,
+      interview: {
         select: {
-            id: true,
-            timeTaken: true,
-            score: true,
-            feedback: true,
-            completedAt: true,
-            interview: {
-                select: {
-                    id: true,
-                    type: true,
-                    topic: true,
-                    description: true,
-                    difficulty: true,
-                    tags: true,
-                },
-            },
-            messages: {
-                select: {
-                    id: true,
-                    content: true,
-                    sequence: true,
-                    role: true,
-                },
-            },
+          id: true,
+          type: true,
+          topic: true,
+          description: true,
+          difficulty: true,
+          tags: true,
         },
-        orderBy: {
-            completedAt: 'desc',
+      },
+      messages: {
+        select: {
+          id: true,
+          content: true,
+          sequence: true,
+          role: true,
         },
-    });
+      },
+    },
+    orderBy: {
+      completedAt: "desc",
+    },
+  });
 
-    return completedInterviews;
+  return completedInterviews;
 }
 
-async function addCompletedInterview(userId, interviewId, questionAnswers, timeTaken, score, feedback) {
-    const completedInterview = await prisma.completedInterview.create({
-        data: {
-            userId,
-            interviewId,
-            timeTaken,
-            score,
-            feedback,
-            messages: {
-                create: questionAnswers.map((qa, index) => [
-                    {
-                        content: qa.question,
-                        sequence: index * 2,
-                        role: 'assistant'
-                    },
-                    {
-                        content: qa.answer,
-                        sequence: index * 2 + 1,
-                        role: 'user'
-                    }
-                ]).flat()
-            }
-        },
-        include: {
-            messages: true
+async function addCompletedInterview(
+  userId,
+  interviewId,
+  questionAnswers,
+  timeTaken,
+  score,
+  feedback,
+) {
+  try {
+    // Create messages array with proper structure
+    const messages = [];
+
+    if (questionAnswers && Array.isArray(questionAnswers)) {
+      questionAnswers.forEach((qa, index) => {
+        // Add question (if exists)
+        if (qa.question) {
+          messages.push({
+            content: qa.question,
+            sequence: index * 2,
+            role: "assistant",
+          });
         }
+
+        // Add answer - support both old format (qa.answer) and new format (qa.content)
+        const answerContent = qa.answer || qa.content || "";
+        if (answerContent) {
+          messages.push({
+            content: answerContent,
+            sequence: index * 2 + 1,
+            role: "user",
+          });
+        }
+      });
+    }
+
+    const completedInterview = await prisma.completedInterview.create({
+      data: {
+        userId,
+        interviewId,
+        timeTaken: timeTaken || 0,
+        score,
+        feedback,
+        messages: {
+          create: messages,
+        },
+      },
+      include: {
+        messages: true,
+      },
     });
 
+    console.log(`✅ Saved interview with ${messages.length} messages`);
     return completedInterview;
+  } catch (error) {
+    console.error("Error in addCompletedInterview:", error);
+    throw error;
+  }
 }
 
 export { getCompletedInterviewsByUserId, addCompletedInterview };

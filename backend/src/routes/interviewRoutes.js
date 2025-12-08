@@ -80,6 +80,7 @@ export default function setupWebSocketRoutes(app) {
         followupQuestions: [],
         followupAnswers: [], // followups (dynamically going to be added to)
         questionAnswers: [], // userAnswers (when user responds we add to this)
+        startTime: Date.now(), // Track when interview started
       });
 
       ws.sessionId = sessionId; // set the webSocket's sessionId to a more accessible variable
@@ -119,7 +120,12 @@ export default function setupWebSocketRoutes(app) {
             return;
           } else if (message.type == "questionAnswer") {
             // Store the full answer with code and whiteboard
+            const currentQuestion =
+              session.questions.questions[session.currentQuestionIndex - 1]
+                ?.question || "";
             session.questionAnswers.push({
+              question: currentQuestion,
+              answer: message.content,
               content: message.content,
               code: message.code,
               whiteboard: message.whiteboard,

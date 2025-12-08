@@ -93,28 +93,42 @@ async function invalidateInterviewSession(sessionToken) {
 // this is the handler of closing the interview and adding it's data to the database
 async function closeInterview(interviewId, session, clerkUserId) {
   try {
+    // Calculate time taken in seconds
+    const timeTaken = session.startTime
+      ? Math.floor((Date.now() - session.startTime) / 1000)
+      : 0;
+
     const feedback = await generateInterviewScore(
       session.questionAnswers,
       "Technical Interview",
     );
     const overallScore = feedback.overallScore;
 
+    console.log(`📊 Interview Summary:`);
+    console.log(`   - User: ${clerkUserId}`);
+    console.log(`   - Interview ID: ${interviewId}`);
+    console.log(`   - Questions Answered: ${session.questionAnswers.length}`);
+    console.log(
+      `   - Time Taken: ${timeTaken}s (${Math.floor(timeTaken / 60)}m ${timeTaken % 60}s)`,
+    );
+    console.log(`   - Score: ${overallScore}%`);
+
     const result = await addCompletedInterview(
       clerkUserId, // now using actual authenticated user id
       interviewId,
       session.questionAnswers,
-      null, // timeTaken - not tracked currently
+      timeTaken,
       overallScore,
       feedback,
     );
 
     if (result) {
-      console.log("✅ interview saved to database");
+      console.log("✅ Interview saved to database successfully");
+      console.log(`   - Database ID: ${result.id}`);
     } else {
-      console.log("⚠️ interview not saved - user may not exist in db yet");
+      console.log("⚠️ Interview not saved - user may not exist in db yet");
     }
 
-    console.log("interview completed and saved to database:", result);
     return result;
   } catch (error) {
     console.error("error closing interview:", error);

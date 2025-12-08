@@ -398,24 +398,79 @@
     font-weight: 700;
 }
 
-.my-interviews .modal-description {
+.my-interviews .modal-feedback {
     margin-top: 1.5rem;
     padding-top: 1.5rem;
     border-top: 1px solid var(--border);
 }
 
-.my-interviews .modal-description h3 {
+.my-interviews .modal-feedback h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 1.25rem 0;
+}
+
+.my-interviews .feedback-breakdown {
+    display: grid;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.my-interviews .breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--surface-glass);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.my-interviews .breakdown-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.my-interviews .breakdown-value {
     font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.my-interviews .feedback-section {
+    margin-top: 1.5rem;
+}
+
+.my-interviews .feedback-section h4 {
+    font-size: 0.9375rem;
     font-weight: 600;
     color: var(--text);
     margin: 0 0 0.75rem 0;
 }
 
-.my-interviews .modal-description p {
-    font-size: 0.9375rem;
+.my-interviews .feedback-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.my-interviews .feedback-section li {
+    font-size: 0.875rem;
     color: var(--text-muted);
     line-height: 1.6;
-    margin: 0;
+    padding: 0.5rem 0;
+    padding-left: 1.5rem;
+    position: relative;
+}
+
+.my-interviews .feedback-section li::before {
+    content: "•";
+    position: absolute;
+    left: 0.5rem;
+    color: var(--primary);
+    font-weight: bold;
 }
 
 /* ============================================

@@ -21,6 +21,8 @@ const Interview = () => {
   const [answer, setAnswer] = useState("");
   const [timer, setTimer] = useState(0);
   const [isFollowup, setIsFollowup] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Tools state
   const [activeTab, setActiveTab] = useState<"code" | "whiteboard">("code");
@@ -86,7 +88,8 @@ const Interview = () => {
         setCurrentQuestion(data.followup.question);
         setIsFollowup(true);
       } else if (data.type === "interviewComplete") {
-        setCurrentQuestion("Interview complete! Thank you.");
+        setIsCompleting(true);
+        setCurrentQuestion("Interview complete! Saving your results...");
         setIsFollowup(false);
       }
     };
@@ -94,6 +97,14 @@ const Interview = () => {
     socket.onclose = () => {
       console.log("Disconnected from interview");
       setIsConnected(false);
+
+      // If interview was completing, wait a bit then redirect
+      if (isCompleting) {
+        setIsSaving(true);
+        setTimeout(() => {
+          navigate("/my-interviews");
+        }, 2000);
+      }
     };
 
     socket.onerror = (error) => {
@@ -103,7 +114,7 @@ const Interview = () => {
     setWs(socket);
 
     return () => socket.close();
-  }, [sessionToken, navigate]);
+  }, [sessionToken, navigate, isCompleting]);
 
   // Timer - starts automatically when connected
   useEffect(() => {
@@ -164,6 +175,24 @@ const Interview = () => {
   return (
     <div className="interview-page">
       <Navbar />
+
+      {/* Completion Overlay */}
+      {(isCompleting || isSaving) && (
+        <div className="completion-overlay">
+          <div className="completion-content">
+            <div className="completion-icon">{isSaving ? "💾" : "🎉"}</div>
+            <h2 className="completion-title">
+              {isSaving ? "Saving Results..." : "Interview Complete!"}
+            </h2>
+            <p className="completion-message">
+              {isSaving
+                ? "We're saving your interview results to your profile."
+                : "Great job! Your responses are being processed."}
+            </p>
+            <div className="completion-spinner"></div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="interview-container">

@@ -258,9 +258,74 @@ const MyInterviews = () => {
             </div>
 
             {selectedInterview.feedback && (
-              <div className="modal-description">
-                <h3>Feedback</h3>
-                <p>{selectedInterview.feedback}</p>
+              <div className="modal-feedback">
+                <h3>Performance Breakdown</h3>
+
+                {typeof selectedInterview.feedback === "object" &&
+                  selectedInterview.feedback.breakdown && (
+                    <div className="feedback-breakdown">
+                      <div className="breakdown-item">
+                        <span className="breakdown-label">Technical</span>
+                        <span className="breakdown-value">
+                          {selectedInterview.feedback.breakdown.technical}%
+                        </span>
+                      </div>
+                      <div className="breakdown-item">
+                        <span className="breakdown-label">Problem Solving</span>
+                        <span className="breakdown-value">
+                          {selectedInterview.feedback.breakdown.problemSolving}%
+                        </span>
+                      </div>
+                      <div className="breakdown-item">
+                        <span className="breakdown-label">Communication</span>
+                        <span className="breakdown-value">
+                          {selectedInterview.feedback.breakdown.communication}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                {typeof selectedInterview.feedback === "object" &&
+                  selectedInterview.feedback.strengths && (
+                    <div className="feedback-section">
+                      <h4>Strengths</h4>
+                      <ul>
+                        {selectedInterview.feedback.strengths.map(
+                          (strength: string, idx: number) => (
+                            <li key={idx}>{strength}</li>
+                          ),
+                        )}
+                      </ul>
+                    </div>
+                  )}
+
+                {typeof selectedInterview.feedback === "object" &&
+                  selectedInterview.feedback.gaps && (
+                    <div className="feedback-section">
+                      <h4>Areas for Improvement</h4>
+                      <ul>
+                        {selectedInterview.feedback.gaps.map(
+                          (gap: string, idx: number) => (
+                            <li key={idx}>{gap}</li>
+                          ),
+                        )}
+                      </ul>
+                    </div>
+                  )}
+
+                {typeof selectedInterview.feedback === "object" &&
+                  selectedInterview.feedback.improvement && (
+                    <div className="feedback-section">
+                      <h4>Recommendations</h4>
+                      <ul>
+                        {selectedInterview.feedback.improvement.map(
+                          (tip: string, idx: number) => (
+                            <li key={idx}>{tip}</li>
+                          ),
+                        )}
+                      </ul>
+                    </div>
+                  )}
               </div>
             )}
           </div>
