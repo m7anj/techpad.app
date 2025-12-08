@@ -98,11 +98,37 @@ const Dashboard = () => {
     setSelectedInterview(null);
   };
 
-  const startInterview = () => {
+  const startInterview = async () => {
     if (selectedInterview && !selectedInterview.premium) {
-      navigate(`/interview/${selectedInterview.id}`, {
-        state: { preset: selectedInterview },
-      });
+      try {
+        // Create a secure interview session
+        const token = await getToken();
+        const response = await fetch(
+          "http://localhost:4000/interview-session/create",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ interviewId: selectedInterview.id }),
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to create interview session");
+        }
+
+        const { sessionToken } = await response.json();
+
+        // Navigate to interview with session token
+        navigate(`/interview/${sessionToken}`, {
+          state: { preset: selectedInterview },
+        });
+      } catch (error) {
+        console.error("Error starting interview:", error);
+        alert("Failed to start interview. Please try again.");
+      }
     }
   };
 

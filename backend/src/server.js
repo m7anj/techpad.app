@@ -13,6 +13,7 @@ import pricingRoutes from "./routes/pricingRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import setupWebSocketRoutes from "./routes/interviewRoutes.js";
 import webhookRoutes from "./routes/webhookRoutes.js";
+import interviewSessionRoutes from "./routes/interviewSessionRoutes.js";
 
 dotenv.config();
 
@@ -48,6 +49,7 @@ app.use("/explore", exploreRoutes);
 app.use("/myInterviews", myInterviewsRoutes);
 app.use("/pricing", pricingRoutes);
 app.use("/user", userRoutes);
+app.use("/interview-session", interviewSessionRoutes);
 
 setupWebSocketRoutes(app);
 

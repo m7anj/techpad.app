@@ -2,6 +2,10 @@ import { generateQuestions } from "../lib/questions.js";
 import { getExplorePresetById } from "./exploreService.js";
 import { addCompletedInterview } from "../controllers/myInterviewsController.js";
 import { generateInterviewScore } from "../lib/score.js";
+import { PrismaClient } from "@prisma/client";
+import crypto from "crypto";
+
+const prisma = new PrismaClient();
 
 async function setupInterview(id) {
   // get interview data (which has the prompt in there)
@@ -15,6 +19,75 @@ async function setupInterview(id) {
   );
 
   return questions;
+}
+
+// Create a secure interview session
+async function createInterviewSession(userId, interviewId) {
+  try {
+    // Generate a secure random token
+    const sessionToken = crypto.randomUUID();
+
+    // Session expires in 3 hours
+    const expiresAt = new Date(Date.now() + 3 * 60 * 60 * 1000);
+
+    const session = await prisma.interviewSession.create({
+      data: {
+        userId,
+        interviewId,
+        sessionToken,
+        expiresAt,
+        isActive: true,
+      },
+    });
+
+    return session;
+  } catch (error) {
+    console.error("Error creating interview session:", error);
+    throw error;
+  }
+}
+
+// Validate an interview session token
+async function validateInterviewSession(sessionToken) {
+  try {
+    const session = await prisma.interviewSession.findUnique({
+      where: { sessionToken },
+    });
+
+    if (!session) {
+      return { valid: false, error: "Session not found" };
+    }
+
+    if (!session.isActive) {
+      return { valid: false, error: "Session is no longer active" };
+    }
+
+    if (new Date() > session.expiresAt) {
+      // Mark as inactive
+      await prisma.interviewSession.update({
+        where: { id: session.id },
+        data: { isActive: false },
+      });
+      return { valid: false, error: "Session has expired" };
+    }
+
+    return { valid: true, session };
+  } catch (error) {
+    console.error("Error validating session:", error);
+    return { valid: false, error: "Validation failed" };
+  }
+}
+
+// Invalidate a session after interview completion
+async function invalidateInterviewSession(sessionToken) {
+  try {
+    await prisma.interviewSession.update({
+      where: { sessionToken },
+      data: { isActive: false },
+    });
+  } catch (error) {
+    console.error("Error invalidating session:", error);
+  }
 }
 
 // this is the handler of closing the interview and adding it's data to the database
@@ -50,4 +123,10 @@ async function closeInterview(interviewId, session, clerkUserId) {
   }
 }
 
-export { setupInterview, closeInterview };
+export {
+  setupInterview,
+  closeInterview,
+  createInterviewSession,
+  validateInterviewSession,
+  invalidateInterviewSession,
+};

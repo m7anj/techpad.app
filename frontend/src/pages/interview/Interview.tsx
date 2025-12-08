@@ -7,7 +7,7 @@ import { Whiteboard, WhiteboardRef } from "../../components/Whiteboard";
 import { Navbar } from "../../components/Navbar";
 
 const Interview = () => {
-  const { id } = useParams();
+  const { id: sessionToken } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const preset = location.state?.preset;
@@ -34,9 +34,33 @@ const Interview = () => {
   // Whiteboard
   const whiteboardRef = useRef<WhiteboardRef>(null);
 
+  // Navigation warning
+  const [showNavigationWarning, setShowNavigationWarning] = useState(false);
+
+  // Warn before navigating away or closing tab
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isConnected) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isConnected]);
+
   // WEB SOCKET CONNECTION
   useEffect(() => {
-    const socket = new WebSocket(`ws://localhost:4000/interview/${id}`);
+    if (!sessionToken) {
+      console.error("No session token provided");
+      navigate("/dashboard");
+      return;
+    }
+
+    const socket = new WebSocket(
+      `ws://localhost:4000/interview/${sessionToken}`,
+    );
 
     socket.onopen = () => {
       setIsConnected(true);
@@ -46,6 +70,13 @@ const Interview = () => {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       console.log("Received:", data);
+
+      if (data.type === "error") {
+        console.error("Interview error:", data.message);
+        alert(`Error: ${data.message}`);
+        navigate("/dashboard");
+        return;
+      }
 
       if (data.type === "question") {
         setIsConnected(true);
@@ -72,7 +103,7 @@ const Interview = () => {
     setWs(socket);
 
     return () => socket.close();
-  }, [id]);
+  }, [sessionToken, navigate]);
 
   // Timer - starts automatically when connected
   useEffect(() => {

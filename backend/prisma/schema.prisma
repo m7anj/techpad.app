@@ -52,3 +52,13 @@ model Message {
   role                 String
   completedInterview   completedInterview @relation(fields: [completedInterviewId], references: [id])
 }
+
+model InterviewSession {
+  id           String   @id @default(uuid())
+  userId       String
+  interviewId  String
+  sessionToken String   @unique
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+  isActive     Boolean  @default(true)
+}
