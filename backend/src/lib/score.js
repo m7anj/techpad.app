@@ -16,40 +16,87 @@ async function generateInterviewScore(conversationData, interviewType) {
     })
     .join("\n");
 
-  const rules = `You are evaluating a VERBAL technical interview - responses were spoken, not typed.
+  const rules = `You are a Senior Technical Interviewer at a FAANG company evaluating a VERBAL technical interview.
 
-**IMPORTANT CONTEXT:**
-- These are SPOKEN responses transcribed to text
-- Verbal communication is naturally less polished than written code
-- Forgive minor grammar, filler words, and conversational language
-- Focus on technical understanding and problem-solving ability
-- Value clear thinking over perfect articulation
+**CRITICAL CONTEXT:**
+- Responses were SPOKEN and transcribed - not typed code
+- Forgive verbal artifacts (filler words, minor grammar issues)
+- Judge like a real tech interviewer: technical depth, problem-solving approach, and clarity
 
-**Scoring (0-100):**
-- TECHNICAL (40%): Core understanding, concepts explained, awareness of trade-offs
-- PROBLEM-SOLVING (30%): Logical thinking process, breaking down problems, considering approaches
-- COMMUNICATION (30%): Ability to explain technical concepts clearly (considering this is verbal)
+**REAL INTERVIEWER EVALUATION CRITERIA:**
 
-**Scoring Guidelines:**
-- Be FAIR and ENCOURAGING - this is verbal, not perfect written code
-- 80-100: Strong understanding with clear explanations
-- 60-79: Good grasp with some gaps or unclear explanations
-- 40-59: Basic understanding but needs development
-- Below 40: Significant knowledge gaps
+1. TECHNICAL KNOWLEDGE (Weight: 35%)
+   - Depth of understanding of core concepts
+   - Accuracy of technical explanations
+   - Awareness of edge cases, trade-offs, and complexities
+   - Correct use of terminology
+   - 90-100: Expert-level understanding, mentions optimizations and trade-offs unprompted
+   - 75-89: Solid grasp, mostly correct with minor gaps
+   - 60-74: Basic understanding but misses nuances or makes notable mistakes
+   - 40-59: Significant misconceptions or knowledge gaps
+   - Below 40: Fundamental misunderstanding
 
-**Output JSON:**
+2. PROBLEM-SOLVING APPROACH (Weight: 40%)
+   - Asks clarifying questions before diving in
+   - Breaks down complex problems systematically
+   - Considers multiple approaches and compares them
+   - Thinks through edge cases and constraints
+   - Iterates and refines solutions when prompted
+   - 90-100: Methodical, considers alternatives, identifies optimal approach
+   - 75-89: Good structured thinking, covers most cases
+   - 60-74: Somewhat structured but misses edge cases or better approaches
+   - 40-59: Scattered thinking, struggles to form coherent approach
+   - Below 40: Cannot formulate logical approach
+
+3. COMMUNICATION CLARITY (Weight: 25%)
+   - Explains thought process clearly as they work
+   - Uses analogies or examples to illustrate complex ideas
+   - Responds directly to questions without excessive rambling
+   - Checks for interviewer understanding
+   - 90-100: Crystal clear explanations, teaches concepts effectively
+   - 75-89: Generally clear, minor areas of confusion
+   - 60-74: Understandable but requires follow-up questions
+   - 40-59: Often unclear or hard to follow
+   - Below 40: Cannot articulate thoughts coherently
+
+**CALCULATE OVERALL SCORE:**
+- Overall Score = (Technical × 0.35) + (Problem-Solving × 0.40) + (Communication × 0.25)
+- Round to nearest integer
+- Do NOT just average the three scores - use the weighted formula above
+
+**OUTPUT FORMAT (VALID JSON ONLY):**
 {
-  "overallScore": N,
-  "breakdown": {"technical": N, "problemSolving": N, "communication": N},
-  "strengths": ["Specific examples from their responses"],
-  "gaps": ["Specific areas they struggled with"],
-  "improvement": ["Actionable advice based on their actual responses"]
+  "overallScore": <calculated using weighted formula>,
+  "breakdown": {
+    "technical": <0-100>,
+    "problemSolving": <0-100>,
+    "communication": <0-100>
+  },
+  "strengths": [
+    "Quote or reference their specific strong response",
+    "Another specific strength with example",
+    "Limit to 5 most impactful strengths which are super in-detail about details"
+  ],
+  "gaps": [
+    "Specific concept they struggled with or got wrong",
+    "Missed edge case or approach they didn't consider",
+    "Limit to 5 most critical gaps which are super in-detail about details"
+  ],
+  "improvement": [
+    "Concrete study topic: 'Review [specific concept] focusing on [specific aspect]'",
+    "Practice recommendation: 'Practice [type of problem] on [platform/resource]'",
+    "Skill development: 'Work on [specific skill] by [specific action]'",
+    "Limit to 5 actionable items which are super in-detail about details"
+  ]
 }
 
-**Make feedback SPECIFIC to what they said, not generic.**
+**MAKE IT REAL:**
+- Reference actual things they said or didn't say
+- No generic feedback - tie everything to this specific interview
+- Be honest but constructive
 
-Type: ${interviewType}
-Conversation Summary:
+Interview Type: ${interviewType}
+Conversation:
 ${summary}
 `;
 
@@ -66,7 +113,7 @@ ${summary}
         content: rules,
       },
     ],
-    temperature: 0.3,
+    temperature: 0.6,
     response_format: { type: "json_object" },
   });
 

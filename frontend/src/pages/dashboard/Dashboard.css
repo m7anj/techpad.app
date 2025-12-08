@@ -2,6 +2,8 @@
    DASHBOARD - Main Layout & Background
    ============================================ */
 
+@import "../../styles/shared-layout.css";
+
 .dashboard {
     min-height: 100vh;
     background: var(--background);
@@ -26,15 +28,15 @@
 }
 
 .main {
-    padding: 0 0 4rem;
+    padding: var(--page-padding-top) 0 var(--page-padding-bottom);
     position: relative;
     z-index: 1;
 }
 
 .container {
-    padding-top: 0;
-    padding-left: 4rem;
-    padding-right: 4rem;
+    padding-top: var(--page-padding-top);
+    padding-left: var(--page-padding-horizontal);
+    padding-right: var(--page-padding-horizontal);
 }
 
 /* ============================================
@@ -51,7 +53,7 @@
 }
 
 .hero-title {
-    font-size: 3rem;
+    font-size: var(--hero-title-size);
     font-weight: 700;
     line-height: 1.2;
     margin: 0 0 1rem 0;
@@ -66,7 +68,7 @@
 }
 
 .hero-subtitle {
-    font-size: 1.125rem;
+    font-size: var(--hero-subtitle-size);
     color: var(--text-muted);
 }
 
@@ -225,7 +227,7 @@
 }
 
 .section-header h2 {
-    font-size: 1.75rem;
+    font-size: var(--section-title-size);
     font-weight: 700;
     color: var(--text);
     margin: 0;
@@ -307,7 +309,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.5rem 1rem;
+    padding: var(--row-padding-vertical) var(--row-padding-horizontal);
     border-bottom: 1px solid var(--border);
     transition: background 0.12s ease;
     cursor: pointer;
@@ -385,7 +387,7 @@
 }
 
 .problem-title {
-    font-size: 0.875rem;
+    font-size: var(--text-title-size);
     font-weight: 500;
     color: var(--text);
     white-space: nowrap;
@@ -394,7 +396,7 @@
 }
 
 .problem-topic {
-    font-size: 0.7rem;
+    font-size: var(--text-subtitle-size);
     color: var(--text-subtle);
     font-weight: 400;
 }
@@ -412,7 +414,7 @@
 .tag-badge {
     padding: 0.15rem 0.45rem;
     border-radius: 12px;
-    font-size: 0.6875rem;
+    font-size: var(--text-tag-size);
     font-weight: 500;
     white-space: nowrap;
 }
@@ -511,7 +513,7 @@
 .difficulty-pill {
     padding: 0.25rem 0.625rem;
     border-radius: 4px;
-    font-size: 0.8125rem;
+    font-size: var(--text-pill-size);
     font-weight: 600;
     text-align: center;
     min-width: 62px;

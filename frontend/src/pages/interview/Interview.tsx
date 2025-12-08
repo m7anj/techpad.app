@@ -38,11 +38,14 @@ const Interview = () => {
 
   // Navigation warning
   const [showNavigationWarning, setShowNavigationWarning] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(
+    null,
+  );
 
   // Warn before navigating away or closing tab
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (isConnected) {
+      if (isConnected && !isCompleting) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -50,7 +53,28 @@ const Interview = () => {
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [isConnected]);
+  }, [isConnected, isCompleting]);
+
+  // Handle navigation confirmation
+  const handleNavigationAttempt = (path: string) => {
+    if (isConnected && !isCompleting) {
+      setPendingNavigation(path);
+      setShowNavigationWarning(true);
+    } else {
+      navigate(path);
+    }
+  };
+
+  const confirmNavigation = () => {
+    if (pendingNavigation) {
+      navigate(pendingNavigation);
+    }
+  };
+
+  const cancelNavigation = () => {
+    setShowNavigationWarning(false);
+    setPendingNavigation(null);
+  };
 
   // WEB SOCKET CONNECTION
   useEffect(() => {
@@ -91,6 +115,11 @@ const Interview = () => {
         setIsCompleting(true);
         setCurrentQuestion("Interview complete! Saving your results...");
         setIsFollowup(false);
+
+        // Navigate to results after a short delay
+        setTimeout(() => {
+          navigate("/my-interviews");
+        }, 2000);
       }
     };
 
@@ -174,7 +203,32 @@ const Interview = () => {
 
   return (
     <div className="interview-page">
-      <Navbar />
+      <Navbar onNavigate={handleNavigationAttempt} />
+
+      {/* Navigation Warning Modal */}
+      {showNavigationWarning && (
+        <div className="modal-overlay" onClick={cancelNavigation}>
+          <div
+            className="modal-content navigation-warning"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="warning-icon">⚠️</div>
+            <h2 className="warning-title">Leave Interview?</h2>
+            <p className="warning-message">
+              Your interview is still in progress. If you leave now, your
+              current session will be lost and you won't be able to resume.
+            </p>
+            <div className="warning-actions">
+              <button className="btn-cancel" onClick={cancelNavigation}>
+                Stay in Interview
+              </button>
+              <button className="btn-confirm-leave" onClick={confirmNavigation}>
+                Leave Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Completion Overlay */}
       {(isCompleting || isSaving) && (
@@ -212,16 +266,10 @@ const Interview = () => {
                     screenshotFormat="image/jpeg"
                     videoConstraints={{
                       facingMode: "user",
+                      width: 1280,
+                      height: 720,
                     }}
                     className="camera-video"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                    }}
                   />
                 ) : (
                   <div className="camera-placeholder">Camera is off</div>

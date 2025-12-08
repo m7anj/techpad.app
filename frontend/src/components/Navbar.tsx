@@ -3,10 +3,24 @@ import { Link, useLocation } from "react-router-dom";
 import Logo from "./Logo/Logo";
 import "./Navbar.css";
 
-export const Navbar = () => {
+interface NavbarProps {
+  onNavigate?: (path: string) => void;
+}
+
+export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLinkClick = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    path: string,
+  ) => {
+    if (onNavigate) {
+      e.preventDefault();
+      onNavigate(path);
+    }
+  };
 
   return (
     <nav className="nav">
@@ -19,6 +33,7 @@ export const Navbar = () => {
             <Link
               to="/dashboard"
               className={`nav-link ${isActive("/dashboard") || isActive("/") ? "active" : ""}`}
+              onClick={(e) => handleLinkClick(e, "/dashboard")}
             >
               <svg
                 width="18"
@@ -38,6 +53,7 @@ export const Navbar = () => {
             <Link
               to="/my-interviews"
               className={`nav-link ${isActive("/my-interviews") ? "active" : ""}`}
+              onClick={(e) => handleLinkClick(e, "/my-interviews")}
             >
               <svg
                 width="18"
@@ -54,6 +70,7 @@ export const Navbar = () => {
             <Link
               to="/pricing"
               className={`nav-link ${isActive("/pricing") ? "active" : ""}`}
+              onClick={(e) => handleLinkClick(e, "/pricing")}
             >
               <svg
                 width="18"
