@@ -70,6 +70,12 @@ const MyInterviews = () => {
     return "score-low";
   };
 
+  const getMeterColor = (score: number): string => {
+    if (score >= 80) return "#22c55e"; // green
+    if (score >= 60) return "#f59e0b"; // yellow
+    return "#ef4444"; // red
+  };
+
   const openInterviewModal = (interview: Interview) => {
     setSelectedInterview(interview);
   };
@@ -259,28 +265,74 @@ const MyInterviews = () => {
 
             {selectedInterview.feedback && (
               <div className="modal-feedback">
-                <h3>Performance Breakdown</h3>
+                <h3>Performance Analysis</h3>
 
                 {typeof selectedInterview.feedback === "object" &&
                   selectedInterview.feedback.breakdown && (
                     <div className="feedback-breakdown">
                       <div className="breakdown-item">
-                        <span className="breakdown-label">Technical</span>
-                        <span className="breakdown-value">
-                          {selectedInterview.feedback.breakdown.technical}%
-                        </span>
+                        <div className="meter-container">
+                          <div
+                            className="meter-fill"
+                            style={{
+                              height: `${selectedInterview.feedback.breakdown.technical}%`,
+                              background: getMeterColor(
+                                selectedInterview.score || 0,
+                              ),
+                            }}
+                          />
+                        </div>
+                        <div className="breakdown-header">
+                          <span className="breakdown-label">Technical</span>
+                          <span className="breakdown-value">
+                            {selectedInterview.feedback.breakdown.technical}%
+                          </span>
+                        </div>
                       </div>
                       <div className="breakdown-item">
-                        <span className="breakdown-label">Problem Solving</span>
-                        <span className="breakdown-value">
-                          {selectedInterview.feedback.breakdown.problemSolving}%
-                        </span>
+                        <div className="meter-container">
+                          <div
+                            className="meter-fill"
+                            style={{
+                              height: `${selectedInterview.feedback.breakdown.problemSolving}%`,
+                              background: getMeterColor(
+                                selectedInterview.score || 0,
+                              ),
+                            }}
+                          />
+                        </div>
+                        <div className="breakdown-header">
+                          <span className="breakdown-label">
+                            Problem Solving
+                          </span>
+                          <span className="breakdown-value">
+                            {
+                              selectedInterview.feedback.breakdown
+                                .problemSolving
+                            }
+                            %
+                          </span>
+                        </div>
                       </div>
                       <div className="breakdown-item">
-                        <span className="breakdown-label">Communication</span>
-                        <span className="breakdown-value">
-                          {selectedInterview.feedback.breakdown.communication}%
-                        </span>
+                        <div className="meter-container">
+                          <div
+                            className="meter-fill"
+                            style={{
+                              height: `${selectedInterview.feedback.breakdown.communication}%`,
+                              background: getMeterColor(
+                                selectedInterview.score || 0,
+                              ),
+                            }}
+                          />
+                        </div>
+                        <div className="breakdown-header">
+                          <span className="breakdown-label">Communication</span>
+                          <span className="breakdown-value">
+                            {selectedInterview.feedback.breakdown.communication}
+                            %
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}

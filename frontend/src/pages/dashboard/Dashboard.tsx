@@ -49,6 +49,7 @@ const Dashboard = () => {
   const [presets, setPresets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedInterview, setSelectedInterview] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [heroQuote] = useState(
     () => HERO_QUOTES[Math.floor(Math.random() * HERO_QUOTES.length)],
   );
@@ -165,6 +166,18 @@ const Dashboard = () => {
 
   const progressPercent = (stats.solved / stats.totalProblems) * 100;
 
+  // Filter presets based on search query
+  const filteredPresets = presets.filter((preset) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      preset.type?.toLowerCase().includes(query) ||
+      preset.topic?.toLowerCase().includes(query) ||
+      preset.description?.toLowerCase().includes(query) ||
+      preset.tags?.some((tag: string) => tag.toLowerCase().includes(query))
+    );
+  });
+
   return (
     <div className="dashboard">
       <Navbar />
@@ -188,11 +201,44 @@ const Dashboard = () => {
           <section className="problems-section">
             <div className="section-header">
               <h2>Interview Problems</h2>
-              <div className="filter-tabs">
-                <button className="filter-tab active">All</button>
-                <button className="filter-tab">Algorithms</button>
-                <button className="filter-tab">System Design</button>
-                <button className="filter-tab">Behavioral</button>
+              <div className="search-container">
+                <svg
+                  className="search-icon"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
+                </svg>
+                <input
+                  type="text"
+                  className="search-input"
+                  placeholder="Search interviews..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button
+                    className="search-clear"
+                    onClick={() => setSearchQuery("")}
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -203,8 +249,8 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="problems-table">
-                {presets && presets.length > 0 ? (
-                  presets.map((preset, index) => (
+                {filteredPresets && filteredPresets.length > 0 ? (
+                  filteredPresets.map((preset, index) => (
                     <div
                       key={preset.id}
                       className={`problem-row ${preset.premium ? "premium-locked" : ""}`}

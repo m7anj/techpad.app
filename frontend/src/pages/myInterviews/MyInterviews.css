@@ -42,8 +42,8 @@
    ============================================ */
 
 .my-interviews .hero-section {
-    padding-top: 150px;
-    margin-bottom: 3rem;
+    padding-top: 20px;
+    margin-bottom: 1.5rem;
 }
 
 .my-interviews .hero-content {
@@ -286,19 +286,27 @@
 }
 
 .my-interviews .modal-content {
-    background: var(--background-secondary);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    max-width: 580px;
-    width: 90%;
-    max-height: 85vh;
+    background: linear-gradient(
+        135deg,
+        rgba(17, 17, 23, 0.95) 0%,
+        rgba(17, 17, 23, 0.98) 100%
+    );
+    backdrop-filter: blur(40px) saturate(150%);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 24px;
+    max-width: 680px;
+    width: 92%;
+    max-height: 90vh;
     overflow-y: auto;
-    padding: 2rem;
+    padding: 2.5rem;
     position: relative;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    animation: slideUp 0.3s ease;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    box-shadow:
+        0 0 0 1px rgba(139, 92, 246, 0.1) inset,
+        0 24px 80px rgba(0, 0, 0, 0.7),
+        0 0 60px rgba(139, 92, 246, 0.15);
+    animation: slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
 }
 
 .my-interviews .modal-content::-webkit-scrollbar {
@@ -346,12 +354,20 @@
 }
 
 .my-interviews .modal-header h2 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--text);
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(
+        135deg,
+        var(--text) 0%,
+        rgba(226, 232, 240, 0.8) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin: 0;
     flex: 1;
-    line-height: 1.3;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
 }
 
 .my-interviews .modal-badges {
@@ -371,11 +387,29 @@
 .my-interviews .modal-stats {
     display: flex;
     gap: 2rem;
-    margin-bottom: 1.5rem;
-    padding: 1.25rem;
-    background: var(--surface-glass);
-    border: 1px solid var(--border);
-    border-radius: 12px;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(
+        135deg,
+        rgba(139, 92, 246, 0.05) 0%,
+        rgba(168, 85, 247, 0.03) 100%
+    );
+    border: 1px solid rgba(139, 92, 246, 0.12);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+}
+
+.my-interviews .modal-stats::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        circle at top left,
+        rgba(139, 92, 246, 0.1) 0%,
+        transparent 50%
+    );
+    pointer-events: none;
 }
 
 .my-interviews .stat-item {
@@ -412,42 +446,114 @@
 }
 
 .my-interviews .feedback-breakdown {
-    display: grid;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-around;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 16px;
 }
 
 .my-interviews .breakdown-item {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
-    padding: 0.75rem 1rem;
-    background: var(--surface-glass);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    gap: 1rem;
+    flex: 1;
+}
+
+.my-interviews .breakdown-item:hover .meter-container {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.my-interviews .breakdown-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
 }
 
 .my-interviews .breakdown-label {
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 0.75rem;
+    font-weight: 600;
     color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .my-interviews .breakdown-value {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--primary);
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.02em;
+}
+
+.my-interviews .meter-container {
+    width: 60px;
+    height: 180px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    transition: all 0.3s ease;
+}
+
+.my-interviews .meter-fill {
+    width: 100%;
+    border-radius: 8px 8px 10px 10px;
+    transition: height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow:
+        0 -4px 16px rgba(0, 0, 0, 0.3),
+        0 0 20px currentColor;
+    position: relative;
+}
+
+.my-interviews .meter-fill::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 30%;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.3) 0%,
+        transparent 100%
+    );
+    border-radius: 8px 8px 0 0;
 }
 
 .my-interviews .feedback-section {
-    margin-top: 1.5rem;
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .my-interviews .feedback-section h4 {
-    font-size: 0.9375rem;
-    font-weight: 600;
+    font-size: 1.125rem;
+    font-weight: 700;
     color: var(--text);
-    margin: 0 0 0.75rem 0;
+    margin: 0 0 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.my-interviews .feedback-section h4::before {
+    content: "";
+    width: 4px;
+    height: 20px;
+    background: linear-gradient(180deg, var(--primary) 0%, var(--accent) 100%);
+    border-radius: 2px;
 }
 
 .my-interviews .feedback-section ul {
@@ -457,20 +563,30 @@
 }
 
 .my-interviews .feedback-section li {
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     color: var(--text-muted);
-    line-height: 1.6;
-    padding: 0.5rem 0;
-    padding-left: 1.5rem;
+    line-height: 1.7;
+    padding: 0.75rem 0;
+    padding-left: 2rem;
     position: relative;
+    transition: all 0.2s ease;
+}
+
+.my-interviews .feedback-section li:hover {
+    color: var(--text);
+    transform: translateX(4px);
 }
 
 .my-interviews .feedback-section li::before {
-    content: "•";
+    content: "";
     position: absolute;
     left: 0.5rem;
-    color: var(--primary);
-    font-weight: bold;
+    top: 1.15rem;
+    width: 8px;
+    height: 8px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
 }
 
 /* ============================================
