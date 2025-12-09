@@ -1,6 +1,5 @@
 import { Webhook } from "svix";
 import { clerkClient } from "@clerk/clerk-sdk-node";
-import { createUser } from "../services/userService.js";
 
 async function handleClerkWebhook(req, res) {
   console.log("=== WEBHOOK RECEIVED ===");
@@ -50,29 +49,12 @@ async function handleClerkWebhook(req, res) {
 
   try {
     if (type === "user.created") {
-      // Fetch complete user data from Clerk API
-      const clerkUser = await clerkClient.users.getUser(data.id);
-
-      const email = clerkUser.emailAddresses?.find(
-        e => e.id === clerkUser.primaryEmailAddressId
-      )?.emailAddress || clerkUser.emailAddresses?.[0]?.emailAddress;
-
-      const username = clerkUser.username || clerkUser.firstName || null;
-
-      if (!email) {
-        console.error("No email found for user:", data.id);
-        return res.status(400).json({ error: "No email found" });
-      }
-
-      // Create user in your database
-      const user = await createUser({
-        clerkId: data.id,
-        email: email,
-        username: username,
-      });
-
-      console.log("✅ User created in database:", user.id, email);
-      return res.status(200).json({ success: true, userId: user.id });
+      // No need to create user in database - Clerk is the source of truth
+      // Just log the event for tracking
+      console.log(`✅ New user registered in Clerk: ${data.id}`);
+      return res
+        .status(200)
+        .json({ success: true, message: "User registered in Clerk" });
     }
 
     // For other event types, just acknowledge receipt
