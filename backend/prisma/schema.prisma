@@ -7,20 +7,9 @@ datasource database {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id                  String               @id @default(uuid())
-  clerkId             String               @unique
-  email               String               @unique
-  subTeir             String               @default("free")
-  createdAt           DateTime             @default(now())
-  profilePicture      String?
-  username            String?              @unique
-  completedInterviews completedInterview[]
-}
-
 model completedInterview {
   id          String    @id @default(uuid())
-  userId      String
+  clerkUserId String    // Clerk user ID, no relation needed
   interviewId String
   timeTaken   Int
   score       Float?
@@ -28,7 +17,8 @@ model completedInterview {
   feedback    Json?
   messages    Message[]
   interview   Interview @relation(fields: [interviewId], references: [id])
-  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([clerkUserId]) // Index for faster queries
 }
 
 model Interview {
@@ -55,10 +45,12 @@ model Message {
 
 model InterviewSession {
   id           String   @id @default(uuid())
-  userId       String
+  clerkUserId  String   // Clerk user ID
   interviewId  String
   sessionToken String   @unique
   createdAt    DateTime @default(now())
   expiresAt    DateTime
   isActive     Boolean  @default(true)
+
+  @@index([clerkUserId])
 }

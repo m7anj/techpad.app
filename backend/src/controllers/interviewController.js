@@ -22,9 +22,9 @@ async function getInterviewQuestionsHandler(req, res) {
 async function createInterviewSessionHandler(req, res) {
   try {
     const { interviewId } = req.body;
-    const userId = req.auth.userId;
+    const clerkUserId = req.auth.userId;
 
-    if (!userId) {
+    if (!clerkUserId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
@@ -32,7 +32,7 @@ async function createInterviewSessionHandler(req, res) {
       return res.status(400).json({ error: "Interview ID is required" });
     }
 
-    const session = await createInterviewSession(userId, interviewId);
+    const session = await createInterviewSession(clerkUserId, interviewId);
     res.status(200).json({
       sessionToken: session.sessionToken,
       expiresAt: session.expiresAt,

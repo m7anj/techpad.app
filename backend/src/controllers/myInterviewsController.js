@@ -2,7 +2,6 @@ import {
   getCompletedInterviewsByUserId as getCompletedInterviews,
   addCompletedInterview as addInterview,
 } from "../services/myInterviewsService.js";
-import { getUserByClerkId } from "../services/userService.js";
 
 export const getCompletedInterviewsByUserId = async (req, res) => {
   try {
@@ -12,14 +11,8 @@ export const getCompletedInterviewsByUserId = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // Get the user record from database using Clerk ID
-    const user = await getUserByClerkId(clerkUserId);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const interviews = await getCompletedInterviews(user.id);
+    // Directly query by clerkUserId - no user lookup needed
+    const interviews = await getCompletedInterviews(clerkUserId);
 
     if (!interviews || interviews.length === 0) {
       return res.status(200).json({ interviews: [] });
@@ -28,7 +21,7 @@ export const getCompletedInterviewsByUserId = async (req, res) => {
     // Format the response for frontend
     const formattedInterviews = interviews.map((interview) => ({
       _id: interview.id,
-      userId: user.id,
+      userId: clerkUserId,
       interviewType: interview.interview.type,
       completedAt: interview.completedAt,
       duration: interview.timeTaken,
@@ -52,18 +45,9 @@ export const addCompletedInterview = async (
   feedback,
 ) => {
   try {
-    // get the actual user database id from clerk id
-    const user = await getUserByClerkId(clerkUserId);
-
-    if (!user) {
-      console.error("user not found for clerk id:", clerkUserId);
-      // don't crash - just log and return null
-      // this can happen if user hasn't fully onboarded yet
-      return null;
-    }
-
+    // Directly use clerkUserId - no user lookup needed
     const result = await addInterview(
-      user.id,
+      clerkUserId,
       interviewId,
       questionAnswers,
       timeTaken,

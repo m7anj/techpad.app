@@ -22,7 +22,7 @@ async function setupInterview(id) {
 }
 
 // Create a secure interview session
-async function createInterviewSession(userId, interviewId) {
+async function createInterviewSession(clerkUserId, interviewId) {
   try {
     // Generate a secure random token
     const sessionToken = crypto.randomUUID();
@@ -32,7 +32,7 @@ async function createInterviewSession(userId, interviewId) {
 
     const session = await prisma.interviewSession.create({
       data: {
-        userId,
+        clerkUserId,
         interviewId,
         sessionToken,
         expiresAt,

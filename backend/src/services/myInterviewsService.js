@@ -2,10 +2,10 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-async function getCompletedInterviewsByUserId(userId) {
+async function getCompletedInterviewsByUserId(clerkUserId) {
   const completedInterviews = await prisma.completedInterview.findMany({
     where: {
-      userId,
+      clerkUserId,
     },
     select: {
       id: true,
@@ -41,7 +41,7 @@ async function getCompletedInterviewsByUserId(userId) {
 }
 
 async function addCompletedInterview(
-  userId,
+  clerkUserId,
   interviewId,
   questionAnswers,
   timeTaken,
@@ -77,7 +77,7 @@ async function addCompletedInterview(
 
     const completedInterview = await prisma.completedInterview.create({
       data: {
-        userId,
+        clerkUserId,
         interviewId,
         timeTaken: timeTaken || 0,
         score,
