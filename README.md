@@ -1,4 +1,5 @@
-techprep.io
+# techprep.io
+
 AI-powered voice interview practice for technical roles. Have real-time spoken conversations with an AI interviewer that asks follow-up questions and provides detailed feedback.
 
 What It Does
