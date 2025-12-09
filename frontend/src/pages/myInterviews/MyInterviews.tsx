@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { Navbar } from "../../components/Navbar";
+import "../../styles/shared-layout.css";
 import "./MyInterviews.css";
 
 interface Interview {
@@ -111,7 +112,7 @@ const MyInterviews = () => {
   };
 
   return (
-    <div className="my-interviews">
+    <div className="my-interviews page-wrapper">
       <Navbar />
 
       <main className="main">

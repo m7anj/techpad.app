@@ -2,8 +2,6 @@
    DASHBOARD - Main Layout & Background
    ============================================ */
 
-@import "../../styles/shared-layout.css";
-
 .dashboard {
     min-height: 100vh;
     background: var(--background);
@@ -28,15 +26,15 @@
 }
 
 .main {
-    padding: var(--page-padding-top) 0 var(--page-padding-bottom);
+    padding: 0 0 4rem;
     position: relative;
     z-index: 1;
 }
 
 .container {
-    padding-top: var(--page-padding-top);
-    padding-left: var(--page-padding-horizontal);
-    padding-right: var(--page-padding-horizontal);
+    padding-top: 0;
+    padding-left: 4rem;
+    padding-right: 4rem;
 }
 
 /* ============================================
@@ -53,7 +51,7 @@
 }
 
 .hero-title {
-    font-size: var(--hero-title-size);
+    font-size: 3rem;
     font-weight: 700;
     line-height: 1.2;
     margin: 0 0 1rem 0;
@@ -68,7 +66,7 @@
 }
 
 .hero-subtitle {
-    font-size: var(--hero-subtitle-size);
+    font-size: 1.125rem;
     color: var(--text-muted);
 }
 
@@ -227,7 +225,7 @@
 }
 
 .section-header h2 {
-    font-size: var(--section-title-size);
+    font-size: 1.75rem;
     font-weight: 700;
     color: var(--text);
     margin: 0;
@@ -309,7 +307,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--row-padding-vertical) var(--row-padding-horizontal);
+    padding: 0.3rem 1rem;
     border-bottom: 1px solid var(--border);
     transition: background 0.12s ease;
     cursor: pointer;
@@ -347,7 +345,7 @@
     display: grid;
     grid-template-columns: 18px 28px 1fr auto;
     align-items: center;
-    gap: 0.875rem;
+    gap: 0.75rem;
     flex: 1;
     min-width: 0;
 }
@@ -387,7 +385,7 @@
 }
 
 .problem-title {
-    font-size: var(--text-title-size);
+    font-size: 0.85rem;
     font-weight: 500;
     color: var(--text);
     white-space: nowrap;
@@ -396,7 +394,7 @@
 }
 
 .problem-topic {
-    font-size: var(--text-subtitle-size);
+    font-size: 0.675rem;
     color: var(--text-subtle);
     font-weight: 400;
 }
@@ -407,14 +405,12 @@
     align-items: center;
     gap: 0.3rem;
     flex-wrap: nowrap;
-    justify-content: flex-end;
-    margin-right: 2rem;
 }
 
 .tag-badge {
     padding: 0.15rem 0.45rem;
     border-radius: 12px;
-    font-size: var(--text-tag-size);
+    font-size: 0.6875rem;
     font-weight: 500;
     white-space: nowrap;
 }
@@ -513,7 +509,7 @@
 .difficulty-pill {
     padding: 0.25rem 0.625rem;
     border-radius: 4px;
-    font-size: var(--text-pill-size);
+    font-size: 0.8125rem;
     font-weight: 600;
     text-align: center;
     min-width: 62px;
@@ -816,6 +812,11 @@
 @media (max-width: 768px) {
     .main {
         padding: 1.5rem 0 2rem;
+    }
+
+    .container {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
     }
 
     .hero-title {

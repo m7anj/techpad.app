@@ -2,6 +2,7 @@ import React from "react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
+import "../../styles/shared-layout.css";
 import "./Dashboard.css";
 import { Navbar } from "../../components/Navbar";
 import HERO_QUOTES from "./quotes";
@@ -143,7 +144,7 @@ const Dashboard = () => {
   });
 
   return (
-    <div className="dashboard">
+    <div className="dashboard page-wrapper">
       <Navbar />
 
       <main className="main">
@@ -214,7 +215,7 @@ const Dashboard = () => {
             ) : (
               <div className="problems-table">
                 {filteredPresets && filteredPresets.length > 0 ? (
-                  filteredPresets.map((preset, index) => (
+                  filteredPresets.map((preset) => (
                     <div
                       key={preset.id}
                       className={`problem-row ${preset.premium ? "premium-locked" : ""}`}
@@ -224,7 +225,7 @@ const Dashboard = () => {
                         <div className="td-status">
                           <div className="status-dot"></div>
                         </div>
-                        <div className="td-number">{index + 1}.</div>
+                        <div className="td-number">{preset.id}.</div>
                         <div className="td-title-group">
                           <span className="problem-title">{preset.type}</span>
                           {preset.topic && (

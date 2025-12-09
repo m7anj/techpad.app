@@ -1,38 +1,227 @@
 /* ============================================
-   SHARED LAYOUT - Common dimensions and spacing
+   SHARED LAYOUT - Universal page structure
    Used by Dashboard and MyInterviews
    ============================================ */
 
-/* Container dimensions - uniform padding */
-:root {
-    --page-padding-horizontal: 4rem;
-    --page-padding-top: 0;
-    --page-padding-bottom: 4rem;
+/* ============================================
+   PAGE STRUCTURE - Layout rules
+   ============================================ */
 
-    --hero-title-size: 3rem;
-    --hero-subtitle-size: 1.125rem;
-    --section-title-size: 1.75rem;
-
-    --row-padding-vertical: 0.3rem;
-    --row-padding-horizontal: 1rem;
-
-    --text-title-size: 0.85rem;
-    --text-subtitle-size: 0.675rem;
-    --text-tag-size: 0.6875rem;
-    --text-pill-size: 0.8125rem;
+/* Main content wrapper */
+.page-wrapper .main {
+    padding: 0 0 4rem;
+    position: relative;
+    z-index: 1;
 }
 
-/* Mobile responsive padding */
+/* Container with consistent horizontal padding */
+.page-wrapper .container {
+    padding-top: 0;
+    padding-left: 4rem;
+    padding-right: 4rem;
+}
+
+/* ============================================
+   HERO SECTION - Consistent top banner
+   ============================================ */
+
+.page-wrapper .hero-section {
+    margin-bottom: 1.5rem;
+    padding-top: 1rem;
+}
+
+.page-wrapper .hero-content {
+    margin-bottom: 1.5rem;
+}
+
+.page-wrapper .hero-title {
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0 0 1rem 0;
+    color: var(--text);
+}
+
+.page-wrapper .gradient-text {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.page-wrapper .hero-subtitle {
+    font-size: 1.125rem;
+    color: var(--text-muted);
+}
+
+/* ============================================
+   SECTION STRUCTURE
+   ============================================ */
+
+.page-wrapper .problems-section {
+    margin-bottom: 3rem;
+}
+
+.page-wrapper .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.page-wrapper .section-header h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+}
+
+/* ============================================
+   TABLE STRUCTURE - Consistent row layout
+   ============================================ */
+
+.page-wrapper .problems-table {
+    background: var(--surface-glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.page-wrapper .problem-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.3rem 1rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s ease;
+    cursor: pointer;
+}
+
+.page-wrapper .problem-row:last-child {
+    border-bottom: none;
+}
+
+.page-wrapper .problem-row:hover {
+    background: var(--surface-elevated);
+}
+
+/* ============================================
+   ROW ELEMENTS - Typography and spacing
+   ============================================ */
+
+.page-wrapper .row-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.page-wrapper .row-right {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-shrink: 0;
+}
+
+.page-wrapper .td-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.page-wrapper .problem-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.page-wrapper .problem-topic {
+    font-size: 0.675rem;
+    color: var(--text-subtle);
+    font-weight: 400;
+}
+
+.page-wrapper .td-tags {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-left: auto;
+    margin-right: 1rem;
+}
+
+.page-wrapper .tag-badge {
+    padding: 0.1rem 0.4rem;
+    border-radius: 2px;
+    font-size: 0.625rem;
+    font-weight: 400;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+
+.page-wrapper .difficulty-pill {
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: center;
+    width: 60px;
+    display: inline-block;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
 @media (max-width: 768px) {
-    :root {
-        --page-padding-horizontal: 1.5rem;
-        --hero-title-size: 2rem;
-        --hero-subtitle-size: 1rem;
+    .page-wrapper .main {
+        padding: 1.5rem 0 2rem;
+    }
+
+    .page-wrapper .container {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    .page-wrapper .hero-title {
+        font-size: 2rem;
+    }
+
+    .page-wrapper .hero-subtitle {
+        font-size: 1rem;
+    }
+
+    .page-wrapper .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .page-wrapper .problem-row {
+        padding: 0.65rem 1rem;
+    }
+
+    .page-wrapper .row-left {
+        gap: 0.625rem;
+    }
+
+    .page-wrapper .problem-title {
+        font-size: 0.875rem;
     }
 }
 
 @media (max-width: 480px) {
-    :root {
-        --hero-title-size: 1.75rem;
+    .page-wrapper .hero-title {
+        font-size: 1.75rem;
+    }
+
+    .page-wrapper .row-left {
+        gap: 0.5rem;
     }
 }
