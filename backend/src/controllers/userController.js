@@ -1,5 +1,5 @@
-// No longer need user lookup - Clerk is the source of truth
-// User data comes from Clerk directly via req.auth
+// userdata comes from Clerk directly via req.auth
+import { getUserRole } from "../middleware/auth.js";
 
 async function getUserByIdHandler(req, res) {
   const { userId: clerkUserId, sessionClaims } = req.auth;
@@ -15,7 +15,7 @@ async function getUserByIdHandler(req, res) {
       email: sessionClaims?.email,
       username: sessionClaims?.username,
       imageUrl: sessionClaims?.imageUrl,
-      role: sessionClaims?.metadata?.role || "free",
+      role: getUserRole(req),
     };
 
     res.status(200).json(user);
