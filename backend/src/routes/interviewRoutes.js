@@ -92,7 +92,6 @@ export default function setupWebSocketRoutes(app) {
       // WebSocket: immediately send first question on connection
       console.log(`✅ Session created successfully. Sending first question.`);
 
-      // generate audio for the first question
       const questionText = session.questions.questions[0].question;
       const audioBase64 = await textToSpeech(questionText);
 

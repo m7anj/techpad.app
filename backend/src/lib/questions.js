@@ -15,8 +15,8 @@ async function generateQuestions(p, d, t) {
     Your job is to generate technical interview questions based on the topic: ${p}
 
     --- INTERVIEW BEHAVIOR RULES ---
+    - Please just give a nice friendly welcome to the interview at the very start. Question 1 should consist of a "Hello there, welcome to the interview today. I just want to walk through _ today. So lets get started something along the lines of this. Make it friendly and humanlike. Don't just jump straight in so harshly, be nice.
     - Make the questions quite random and unique and not the same as something you'd usually give.
-    - on the first question, give a welcome to the interview. make it friendly and humanlike.
     • Begin with a very easy fundamental question.
     • Each following question must increase in difficulty.
     • Ask questions in the exact tone and style a real human interviewer would use:

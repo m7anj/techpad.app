@@ -170,6 +170,12 @@ const Interview = () => {
       console.log("Disconnected from interview");
       setIsConnected(false);
 
+      // stop audio when disconnecting
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+
       // If interview was completing, wait a bit then redirect
       if (isCompleting) {
         setIsSaving(true);
@@ -185,7 +191,14 @@ const Interview = () => {
 
     setWs(socket);
 
-    return () => socket.close();
+    return () => {
+      // stop audio when component unmounts
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      socket.close();
+    };
   }, [sessionToken, navigate, isCompleting]);
 
   // Timer - starts automatically when connected
