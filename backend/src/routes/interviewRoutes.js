@@ -7,6 +7,7 @@ import {
 import { nodeModuleNameResolver } from "typescript";
 import { generateFollowups } from "../lib/followups.js";
 import { closeInterview } from "../services/interviewService.js";
+import { textToSpeech } from "../lib/textToSpeech.js";
 
 const activeSessions = new Map(); // Initialising a new map when the server starts running which has all the activeSessions in here.
 const questionCache = new Map(); // cache generated questions by interview id to avoid excessive api calls
@@ -90,10 +91,16 @@ export default function setupWebSocketRoutes(app) {
 
       // WebSocket: immediately send first question on connection
       console.log(`✅ Session created successfully. Sending first question.`);
+
+      // generate audio for the first question
+      const questionText = session.questions.questions[0].question;
+      const audioBase64 = await textToSpeech(questionText);
+
       const firstQuestion = {
         type: "question",
-        question: session.questions.questions[0].question,
+        question: questionText,
         questionIndex: 1,
+        audio: audioBase64, // base64 encoded mp3
       };
       ws.send(JSON.stringify(firstQuestion));
 
@@ -147,6 +154,11 @@ export default function setupWebSocketRoutes(app) {
 
             session.followupQuestions.push(followup.followup);
 
+            // generate audio for followup question
+            const followupAudio = await textToSpeech(
+              followup.followup.followupQuestion,
+            );
+
             // Send followup with proper type for frontend
             const followupMessage = {
               type: "followup",
@@ -155,6 +167,7 @@ export default function setupWebSocketRoutes(app) {
                 isThisTheEnd: followup.followup.isThisTheEnd,
                 forWhatQuestion: followup.followup.forWhatQuestion,
               },
+              audio: followupAudio, // base64 encoded mp3
             };
             console.log("Sending followup:", followupMessage);
             ws.send(JSON.stringify(followupMessage));
@@ -180,14 +193,19 @@ export default function setupWebSocketRoutes(app) {
                 session.currentQuestionIndex <=
                 session.questions.questions.length
               ) {
+                // generate audio for next question
+                const nextQuestionText =
+                  session.questions.questions[
+                    session.currentQuestionIndex - 1
+                  ].question;
+                const audioBase64 = await textToSpeech(nextQuestionText);
+
                 ws.send(
                   JSON.stringify({
                     type: "question",
-                    question:
-                      session.questions.questions[
-                        session.currentQuestionIndex - 1
-                      ].question,
+                    question: nextQuestionText,
                     questionIndex: session.currentQuestionIndex,
+                    audio: audioBase64, // base64 encoded mp3
                   }),
                 );
               } else {
@@ -216,14 +234,19 @@ export default function setupWebSocketRoutes(app) {
                 session.currentQuestionIndex <=
                 session.questions.questions.length
               ) {
+                // generate audio for next question
+                const nextQuestionText =
+                  session.questions.questions[
+                    session.currentQuestionIndex - 1
+                  ].question;
+                const audioBase64 = await textToSpeech(nextQuestionText);
+
                 ws.send(
                   JSON.stringify({
                     type: "question",
-                    question:
-                      session.questions.questions[
-                        session.currentQuestionIndex - 1
-                      ].question,
+                    question: nextQuestionText,
                     questionIndex: session.currentQuestionIndex,
+                    audio: audioBase64, // base64 encoded mp3
                   }),
                 );
               } else {
@@ -231,6 +254,11 @@ export default function setupWebSocketRoutes(app) {
               }
             } else {
               session.followupQuestions.push(followup.followup);
+
+              // generate audio for followup question
+              const followupAudio = await textToSpeech(
+                followup.followup.followupQuestion,
+              );
 
               // Send followup with proper type for frontend
               const followupMessage = {
@@ -240,6 +268,7 @@ export default function setupWebSocketRoutes(app) {
                   isThisTheEnd: followup.followup.isThisTheEnd,
                   forWhatQuestion: followup.followup.forWhatQuestion,
                 },
+                audio: followupAudio, // base64 encoded mp3
               };
               console.log("Sending followup:", followupMessage);
               ws.send(JSON.stringify(followupMessage));

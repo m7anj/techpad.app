@@ -24,6 +24,41 @@ const Interview = () => {
   const [isCompleting, setIsCompleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // audio playback
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // play audio from base64 encoded mp3
+  const playAudio = (base64Audio: string) => {
+    try {
+      // stop any currently playing audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+
+      // convert base64 to audio blob
+      const binaryString = atob(base64Audio);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: "audio/mp3" });
+      const audioUrl = URL.createObjectURL(blob);
+
+      // create and play audio
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      audio.play().catch((err) => console.error("error playing audio:", err));
+
+      // cleanup url when done
+      audio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+      };
+    } catch (error) {
+      console.error("error decoding audio:", error);
+    }
+  };
+
   // Tools state
   const [activeTab, setActiveTab] = useState<"code" | "whiteboard">("code");
   const [code, setCode] = useState("");
@@ -108,9 +143,17 @@ const Interview = () => {
         setIsConnected(true);
         setCurrentQuestion(data.question);
         setIsFollowup(false);
+        // play audio if available
+        if (data.audio) {
+          playAudio(data.audio);
+        }
       } else if (data.type === "followup") {
         setCurrentQuestion(data.followup.question);
         setIsFollowup(true);
+        // play audio if available
+        if (data.audio) {
+          playAudio(data.audio);
+        }
       } else if (data.type === "interviewComplete") {
         setIsCompleting(true);
         setCurrentQuestion("Interview complete! Saving your results...");
