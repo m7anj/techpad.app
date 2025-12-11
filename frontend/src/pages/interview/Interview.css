@@ -242,6 +242,42 @@
     color: var(--text-subtle);
 }
 
+.mic-btn {
+    padding: 0 1rem;
+    height: 50px;
+    font-size: 1.5rem;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mic-btn:hover {
+    background: var(--background);
+    border-color: var(--primary);
+    transform: translateY(-1px);
+}
+
+.mic-btn.recording {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    }
+}
+
 .submit-btn-compact {
     padding: 0 1.75rem;
     height: 50px;

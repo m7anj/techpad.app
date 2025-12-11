@@ -12,6 +12,8 @@ const Interview = () => {
   const location = useLocation();
   const preset = location.state?.preset;
 
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
   // WebSocket connection
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -23,6 +25,7 @@ const Interview = () => {
   const [isFollowup, setIsFollowup] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   // audio playback
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -212,6 +215,51 @@ const Interview = () => {
     return () => clearInterval(interval);
   }, [isConnected]);
 
+
+  useEffect(() => {
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            transcript += event.results[i][0].transcript;
+          }
+        }
+        setAnswer(prev => prev + transcript + ' ');
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+
+      recognitionRef.current = recognition;
+
+    } else {
+      console.log('NO SPEECH RECOGNITION');
+    }
+  }, []);
+
+
+  // Toggle recording function
+  const toggleRecording = () => {
+    if (!recognitionRef.current) return;
+    
+    if (isRecording) {
+      recognitionRef.current.stop();
+    } else {
+      recognitionRef.current.start();
+    }
+    setIsRecording(!isRecording);
+  };
+
   // Camera toggle
   const toggleCamera = () => {
     setCameraOn(!cameraOn);
@@ -356,6 +404,13 @@ const Interview = () => {
                   placeholder="Type your answer here..."
                   className="answer-input-compact"
                 />
+                <button
+                  onClick={toggleRecording}
+                  className={`mic-btn ${isRecording ? 'recording' : ''}`}
+                  title={isRecording ? 'Stop recording' : 'Start recording'}
+                >
+                  {isRecording ? '🔴' : '🎙️'}
+                </button>
                 <button onClick={submitAnswer} className="submit-btn-compact">
                   Send
                 </button>
