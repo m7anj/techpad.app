@@ -8,6 +8,10 @@ import { nodeModuleNameResolver } from "typescript";
 import { generateFollowups } from "../lib/followups.js";
 import { closeInterview } from "../services/interviewService.js";
 import { textToSpeech } from "../lib/textToSpeech.js";
+import {
+  isClarifyingQuestion,
+  generateClarification,
+} from "../lib/clarification.js";
 
 const activeSessions = new Map(); // Initialising a new map when the server starts running which has all the activeSessions in here.
 const questionCache = new Map(); // cache generated questions by interview id to avoid excessive api calls
@@ -78,6 +82,7 @@ export default function setupWebSocketRoutes(app) {
         clerkUserId: clerkUserId, // Store the authenticated user ID
         questions: questions, // Questions we are going to ask
         currentQuestionIndex: 1, // q counter (every qeustion will be ++)
+        currentQuestionText: questions.questions[0].question, // Track the current question being asked
         followupQuestions: [],
         followupAnswers: [], // followups (dynamically going to be added to)
         questionAnswers: [], // userAnswers (when user responds we add to this)
@@ -125,6 +130,34 @@ export default function setupWebSocketRoutes(app) {
             ws.send(JSON.stringify({ type: "pong" }));
             return;
           } else if (message.type == "questionAnswer") {
+            // Check if this is a clarifying question
+            if (isClarifyingQuestion(message.content)) {
+              console.log(
+                "🤔 Detected clarifying question, generating clarification...",
+              );
+              const clarificationText = await generateClarification(
+                session.currentQuestionText,
+                message.content,
+              );
+
+              const clarificationAudio = await textToSpeech(clarificationText);
+
+              // Send clarification as a followup but don't move forward
+              ws.send(
+                JSON.stringify({
+                  type: "followup",
+                  followup: {
+                    question: clarificationText,
+                    isThisTheEnd: false,
+                    forWhatQuestion: session.currentQuestionIndex,
+                  },
+                  audio: clarificationAudio,
+                }),
+              );
+
+              return; // Don't process as actual answer
+            }
+
             // Store the full answer with code and whiteboard
             const currentQuestion =
               session.questions.questions[session.currentQuestionIndex - 1]
@@ -152,6 +185,7 @@ export default function setupWebSocketRoutes(app) {
             );
 
             session.followupQuestions.push(followup.followup);
+            session.currentQuestionText = followup.followup.followupQuestion; // Update current question
 
             // generate audio for followup question
             const followupAudio = await textToSpeech(
@@ -171,6 +205,34 @@ export default function setupWebSocketRoutes(app) {
             console.log("Sending followup:", followupMessage);
             ws.send(JSON.stringify(followupMessage));
           } else if (message.type == "followupAnswer") {
+            // Check if this is a clarifying question
+            if (isClarifyingQuestion(message.content)) {
+              console.log(
+                "🤔 Detected clarifying question, generating clarification...",
+              );
+              const clarificationText = await generateClarification(
+                session.currentQuestionText,
+                message.content,
+              );
+
+              const clarificationAudio = await textToSpeech(clarificationText);
+
+              // Send clarification without moving forward
+              ws.send(
+                JSON.stringify({
+                  type: "followup",
+                  followup: {
+                    question: clarificationText,
+                    isThisTheEnd: false,
+                    forWhatQuestion: session.currentQuestionIndex,
+                  },
+                  audio: clarificationAudio,
+                }),
+              );
+
+              return; // Don't process as actual answer
+            }
+
             // Store the full followup answer with code and whiteboard
             session.followupAnswers.push({
               content: message.content,
@@ -196,6 +258,7 @@ export default function setupWebSocketRoutes(app) {
                 const nextQuestionText =
                   session.questions.questions[session.currentQuestionIndex - 1]
                     .question;
+                session.currentQuestionText = nextQuestionText; // Update current question
                 const audioBase64 = await textToSpeech(nextQuestionText);
 
                 ws.send(
@@ -236,6 +299,7 @@ export default function setupWebSocketRoutes(app) {
                 const nextQuestionText =
                   session.questions.questions[session.currentQuestionIndex - 1]
                     .question;
+                session.currentQuestionText = nextQuestionText; // Update current question
                 const audioBase64 = await textToSpeech(nextQuestionText);
 
                 ws.send(
@@ -251,6 +315,7 @@ export default function setupWebSocketRoutes(app) {
               }
             } else {
               session.followupQuestions.push(followup.followup);
+              session.currentQuestionText = followup.followup.followupQuestion; // Update current question
 
               // generate audio for followup question
               const followupAudio = await textToSpeech(
