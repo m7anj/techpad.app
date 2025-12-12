@@ -41,7 +41,7 @@ export default function setupWebSocketRoutes(app) {
       }
 
       const { session: dbSession } = validation;
-      clerkUserId = dbSession.userId;
+      clerkUserId = dbSession.clerkUserId;
       interviewId = dbSession.interviewId;
 
       console.log(`✅ Valid session for user: ${clerkUserId}`);
@@ -194,9 +194,8 @@ export default function setupWebSocketRoutes(app) {
               ) {
                 // generate audio for next question
                 const nextQuestionText =
-                  session.questions.questions[
-                    session.currentQuestionIndex - 1
-                  ].question;
+                  session.questions.questions[session.currentQuestionIndex - 1]
+                    .question;
                 const audioBase64 = await textToSpeech(nextQuestionText);
 
                 ws.send(
@@ -235,9 +234,8 @@ export default function setupWebSocketRoutes(app) {
               ) {
                 // generate audio for next question
                 const nextQuestionText =
-                  session.questions.questions[
-                    session.currentQuestionIndex - 1
-                  ].question;
+                  session.questions.questions[session.currentQuestionIndex - 1]
+                    .question;
                 const audioBase64 = await textToSpeech(nextQuestionText);
 
                 ws.send(

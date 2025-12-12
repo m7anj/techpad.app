@@ -10,6 +10,7 @@ import "./Whiteboard.css";
 
 interface WhiteboardProps {
   onChange?: (lines: any[]) => void;
+  isActive?: boolean;
 }
 
 export interface WhiteboardRef {
@@ -17,7 +18,7 @@ export interface WhiteboardRef {
 }
 
 export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
-  ({ onChange }, ref) => {
+  ({ onChange, isActive }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     useImperativeHandle(ref, () => ({
@@ -65,7 +66,23 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
       };
     }, []);
 
-    // Redraw canvas whenever lines change
+    // Redraw when tab becomes active
+    useEffect(() => {
+      if (isActive) {
+        const canvas = canvasRef.current;
+        const container = containerRef.current;
+        if (!canvas || !container) return;
+
+        const rect = container.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          canvas.width = rect.width;
+          canvas.height = rect.height;
+          setCanvasSize({ width: rect.width, height: rect.height });
+        }
+      }
+    }, [isActive]);
+
+    // Redraw canvas whenever lines change or canvas size changes
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -102,7 +119,7 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
           ctx.fill();
         }
       });
-    }, [lines, currentLine]);
+    }, [lines, currentLine, canvasSize]);
 
     const getPoint = (e: React.MouseEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;

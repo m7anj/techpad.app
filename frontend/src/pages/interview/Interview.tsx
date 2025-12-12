@@ -26,6 +26,7 @@ const Interview = () => {
   const [isCompleting, setIsCompleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
 
   // audio playback
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -44,6 +45,7 @@ const Interview = () => {
       }
 
       setIsAudioPlaying(true);
+      setIsWaitingForResponse(false);
 
       // convert base64 to audio blob
       const binaryString = atob(base64Audio);
@@ -64,7 +66,7 @@ const Interview = () => {
         URL.revokeObjectURL(audioUrl);
         setIsAudioPlaying(false);
         // automatically start voice recognition after audio finishes
-        startListening();
+        setTimeout(() => startListening(), 100);
       };
     } catch (error) {
       console.error("error decoding audio:", error);
@@ -138,6 +140,7 @@ const Interview = () => {
 
     socket.onopen = () => {
       setIsConnected(true);
+      setIsWaitingForResponse(true);
       console.log("WebSocket connection opened");
     };
 
@@ -156,6 +159,7 @@ const Interview = () => {
         setIsConnected(true);
         setCurrentQuestion(data.question);
         setIsFollowup(false);
+        setIsWaitingForResponse(false);
         // play audio if available
         if (data.audio) {
           playAudio(data.audio);
@@ -163,6 +167,7 @@ const Interview = () => {
       } else if (data.type === "followup") {
         setCurrentQuestion(data.followup.question);
         setIsFollowup(true);
+        setIsWaitingForResponse(false);
         // play audio if available
         if (data.audio) {
           playAudio(data.audio);
@@ -171,6 +176,7 @@ const Interview = () => {
         setIsCompleting(true);
         setCurrentQuestion("Interview complete! Saving your results...");
         setIsFollowup(false);
+        setIsWaitingForResponse(false);
 
         // Navigate to results after a short delay
         setTimeout(() => {
@@ -262,8 +268,17 @@ const Interview = () => {
       };
 
       recognition.onend = () => {
+        console.log("Recognition ended");
         setIsRecording(false);
         setInterimTranscript("");
+      };
+
+      recognition.onerror = (event) => {
+        console.error("Recognition error:", event.error);
+        if (event.error === "aborted" || event.error === "no-speech") {
+          // These are recoverable errors, just mark as not recording
+          setIsRecording(false);
+        }
       };
 
       recognitionRef.current = recognition;
@@ -276,11 +291,24 @@ const Interview = () => {
   const startListening = () => {
     if (!recognitionRef.current || isAudioPlaying) return;
 
+    // If already recording, don't start again
+    if (isRecording) {
+      console.log("Already recording, skipping start");
+      return;
+    }
+
     try {
+      console.log("Starting recognition...");
       recognitionRef.current.start();
       setIsRecording(true);
-    } catch (error) {
-      console.error("Error starting recognition:", error);
+    } catch (error: any) {
+      // If already started, ignore the error
+      if (error.message && error.message.includes("already started")) {
+        console.log("Recognition already started");
+        setIsRecording(true);
+      } else {
+        console.error("Error starting recognition:", error);
+      }
     }
   };
 
@@ -289,6 +317,7 @@ const Interview = () => {
     if (!recognitionRef.current) return;
 
     try {
+      console.log("Stopping recognition...");
       recognitionRef.current.stop();
       setIsRecording(false);
       setInterimTranscript("");
@@ -304,10 +333,13 @@ const Interview = () => {
 
   // Submit answer
   const submitAnswer = () => {
-    if (!ws || !answer.trim()) return;
+    if (!ws || !answer.trim() || interimTranscript) return;
 
     // stop listening when submitting
     stopListening();
+
+    // set waiting state immediately
+    setIsWaitingForResponse(true);
 
     // get whiteboard canvas and convert to base64
     let whiteboardBase64 = null;
@@ -335,6 +367,7 @@ const Interview = () => {
       hasWhiteboard: !!whiteboardBase64,
     });
 
+    // clear answer and interim immediately
     setAnswer("");
     setInterimTranscript("");
     // Note: Not clearing code/whiteboard in case user wants to keep working on them
@@ -398,7 +431,7 @@ const Interview = () => {
         <div className="interview-grid">
           {/* Left Column */}
           <div className="interview-left">
-            {/* Camera */}
+            {/* Camera with Overlays */}
             <div className="camera-section">
               <button onClick={toggleCamera} className="camera-toggle">
                 {cameraOn ? "Camera Off" : "Camera On"}
@@ -420,45 +453,46 @@ const Interview = () => {
                   <div className="camera-placeholder">Camera is off</div>
                 )}
               </div>
-            </div>
 
-            {/* Question */}
-            <div className="question-section">
-              <div className="question-header">
-                <span className="question-label">Question</span>
+              {/* Question Overlay */}
+              <div className="question-overlay">
+                {isWaitingForResponse ? (
+                  <div className="overlay-loading">
+                    <div className="loading-spinner-small"></div>
+                  </div>
+                ) : (
+                  <p className="overlay-question">{currentQuestion}</p>
+                )}
               </div>
-              {currentQuestion ? (
-                <p className="question-text">{currentQuestion}</p>
-              ) : (
-                <p className="question-text question-placeholder">
-                  Waiting for question...
-                </p>
+
+              {/* Recording Indicator */}
+              {isRecording && (
+                <div className="recording-indicator">
+                  <span className="rec-dot">●</span>
+                </div>
               )}
-            </div>
 
-            {/* Answer Section */}
-            <div className="answer-section">
-              <div className="answer-input-group">
-                <div className="answer-input-wrapper">
-                  <textarea
-                    value={answer}
-                    onChange={(e) => setAnswer(e.target.value)}
-                    placeholder="Type your answer here..."
-                    className="answer-input-compact"
-                  />
-                  {interimTranscript && (
-                    <div className="interim-transcript">
-                      {interimTranscript}
-                    </div>
-                  )}
-                </div>
-                <div className="voice-indicator">
-                  {isRecording && <span className="recording-pulse">●</span>}
-                </div>
-                <button onClick={submitAnswer} className="submit-btn-compact">
-                  Send
+              {/* Send Button Overlay */}
+              {answer.trim() && !interimTranscript && (
+                <button
+                  onClick={submitAnswer}
+                  className="send-btn-overlay"
+                  disabled={isWaitingForResponse || !!interimTranscript}
+                >
+                  <svg
+                    className="send-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
                 </button>
-              </div>
+              )}
             </div>
           </div>
 
@@ -527,7 +561,10 @@ const Interview = () => {
                   height: "100%",
                 }}
               >
-                <Whiteboard ref={whiteboardRef} />
+                <Whiteboard
+                  ref={whiteboardRef}
+                  isActive={activeTab === "whiteboard"}
+                />
               </div>
             </div>
           </div>
