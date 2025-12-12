@@ -29,6 +29,10 @@ const Interview = () => {
 
   // audio playback
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+
+  // interim transcript for grey text display
+  const [interimTranscript, setInterimTranscript] = useState("");
 
   // play audio from base64 encoded mp3
   const playAudio = (base64Audio: string) => {
@@ -38,6 +42,8 @@ const Interview = () => {
         audioRef.current.pause();
         audioRef.current = null;
       }
+
+      setIsAudioPlaying(true);
 
       // convert base64 to audio blob
       const binaryString = atob(base64Audio);
@@ -53,12 +59,16 @@ const Interview = () => {
       audioRef.current = audio;
       audio.play().catch((err) => console.error("error playing audio:", err));
 
-      // cleanup url when done
+      // cleanup url when done and start voice recognition
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl);
+        setIsAudioPlaying(false);
+        // automatically start voice recognition after audio finishes
+        startListening();
       };
     } catch (error) {
       console.error("error decoding audio:", error);
+      setIsAudioPlaying(false);
     }
   };
 
@@ -179,6 +189,9 @@ const Interview = () => {
         audioRef.current = null;
       }
 
+      // stop recognition
+      stopListening();
+
       // If interview was completing, wait a bit then redirect
       if (isCompleting) {
         setIsSaving(true);
@@ -200,6 +213,7 @@ const Interview = () => {
         audioRef.current.pause();
         audioRef.current = null;
       }
+      stopListening();
       socket.close();
     };
   }, [sessionToken, navigate, isCompleting]);
@@ -215,49 +229,72 @@ const Interview = () => {
     return () => clearInterval(interval);
   }, [isConnected]);
 
-
   useEffect(() => {
-    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) {
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
 
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = 'en-US';
-      
+      recognition.lang = "en-US";
 
       recognition.onresult = (event) => {
-        let transcript = '';
+        let interim = "";
+        let final = "";
+
         for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            transcript += event.results[i][0].transcript;
+            final += transcript;
+          } else {
+            interim += transcript;
           }
         }
-        setAnswer(prev => prev + transcript + ' ');
+
+        // update interim transcript for grey text display
+        setInterimTranscript(interim);
+
+        // append final transcript to answer
+        if (final) {
+          setAnswer((prev) => prev + final + " ");
+        }
       };
 
       recognition.onend = () => {
         setIsRecording(false);
+        setInterimTranscript("");
       };
 
       recognitionRef.current = recognition;
-
     } else {
-      console.log('NO SPEECH RECOGNITION');
+      console.log("NO SPEECH RECOGNITION");
     }
   }, []);
 
+  // Start listening automatically
+  const startListening = () => {
+    if (!recognitionRef.current || isAudioPlaying) return;
 
-  // Toggle recording function
-  const toggleRecording = () => {
-    if (!recognitionRef.current) return;
-    
-    if (isRecording) {
-      recognitionRef.current.stop();
-    } else {
+    try {
       recognitionRef.current.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Error starting recognition:", error);
     }
-    setIsRecording(!isRecording);
+  };
+
+  // Stop listening
+  const stopListening = () => {
+    if (!recognitionRef.current) return;
+
+    try {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+      setInterimTranscript("");
+    } catch (error) {
+      console.error("Error stopping recognition:", error);
+    }
   };
 
   // Camera toggle
@@ -268,6 +305,9 @@ const Interview = () => {
   // Submit answer
   const submitAnswer = () => {
     if (!ws || !answer.trim()) return;
+
+    // stop listening when submitting
+    stopListening();
 
     // get whiteboard canvas and convert to base64
     let whiteboardBase64 = null;
@@ -296,6 +336,7 @@ const Interview = () => {
     });
 
     setAnswer("");
+    setInterimTranscript("");
     // Note: Not clearing code/whiteboard in case user wants to keep working on them
   };
 
@@ -398,19 +439,22 @@ const Interview = () => {
             {/* Answer Section */}
             <div className="answer-section">
               <div className="answer-input-group">
-                <textarea
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  placeholder="Type your answer here..."
-                  className="answer-input-compact"
-                />
-                <button
-                  onClick={toggleRecording}
-                  className={`mic-btn ${isRecording ? 'recording' : ''}`}
-                  title={isRecording ? 'Stop recording' : 'Start recording'}
-                >
-                  {isRecording ? '🔴' : '🎙️'}
-                </button>
+                <div className="answer-input-wrapper">
+                  <textarea
+                    value={answer}
+                    onChange={(e) => setAnswer(e.target.value)}
+                    placeholder="Type your answer here..."
+                    className="answer-input-compact"
+                  />
+                  {interimTranscript && (
+                    <div className="interim-transcript">
+                      {interimTranscript}
+                    </div>
+                  )}
+                </div>
+                <div className="voice-indicator">
+                  {isRecording && <span className="recording-pulse">●</span>}
+                </div>
                 <button onClick={submitAnswer} className="submit-btn-compact">
                   Send
                 </button>
