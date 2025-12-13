@@ -98,9 +98,15 @@ async function closeInterview(interviewId, session, clerkUserId) {
       ? Math.floor((Date.now() - session.startTime) / 1000)
       : 0;
 
+    // Get expected duration from interview preset
+    const interview = await getExplorePresetById(interviewId);
+    const expectedDuration = interview?.expectedDuration || 0;
+
     const feedback = await generateInterviewScore(
       session.questionAnswers,
       "Technical Interview",
+      timeTaken,
+      expectedDuration,
     );
     const overallScore = feedback.overallScore;
 

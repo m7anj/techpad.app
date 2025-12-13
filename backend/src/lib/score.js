@@ -7,97 +7,127 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-async function generateInterviewScore(conversationData, interviewType) {
-  // Summarize conversation to reduce token count
-  const summary = conversationData
+async function generateInterviewScore(
+  conversationData,
+  interviewType,
+  timeTaken,
+  expectedDuration,
+) {
+  // Build full conversation context
+  const fullConversation = conversationData
     .map((msg, idx) => {
-      const content = msg.content?.substring(0, 500) || ""; // Limit each message to 500 chars
-      return `Q${idx + 1}: ${content}`;
+      const role = msg.role === "assistant" ? "INTERVIEWER" : "CANDIDATE";
+      const content = msg.content || "";
+      return `${role}: ${content}`;
     })
-    .join("\n");
+    .join("\n\n");
 
-  const rules = `You are a Senior Technical Interviewer at a FAANG company evaluating a VERBAL technical interview.
+  const totalQuestions = conversationData.filter(
+    (m) => m.role === "assistant",
+  ).length;
+  const totalAnswers = conversationData.filter((m) => m.role === "user").length;
+  const timeSpentMinutes = Math.floor(timeTaken / 60);
+  const timeSpentSeconds = timeTaken % 60;
+  const completionRatio = expectedDuration ? timeTaken / expectedDuration : 0;
 
-**CRITICAL CONTEXT:**
-- Responses were SPOKEN and transcribed - not typed code
-- Forgive verbal artifacts (filler words, minor grammar issues)
-- Judge like a real tech interviewer: technical depth, problem-solving approach, and clarity
+  const rules = `You are a STRICT Senior Technical Interviewer evaluating this interview with BRUTAL HONESTY.
 
-**REAL INTERVIEWER EVALUATION CRITERIA:**
+**INTERVIEW CONTEXT:**
+- Total questions asked: ${totalQuestions}
+- Total answers given: ${totalAnswers}
+- Time spent: ${timeSpentMinutes}m ${timeSpentSeconds}s
+- Expected duration: ${expectedDuration ? Math.floor(expectedDuration / 60) + "m" : "N/A"}
+- Completion ratio: ${(completionRatio * 100).toFixed(0)}%
 
-1. TECHNICAL KNOWLEDGE (Weight: 35%)
-   - Depth of understanding of core concepts
-   - Accuracy of technical explanations
-   - Awareness of edge cases, trade-offs, and complexities
-   - Correct use of terminology
-   - 90-100: Expert-level understanding, mentions optimizations and trade-offs unprompted
-   - 75-89: Solid grasp, mostly correct with minor gaps
-   - 60-74: Basic understanding but misses nuances or makes notable mistakes
-   - 40-59: Significant misconceptions or knowledge gaps
-   - Below 40: Fundamental misunderstanding
+**CRITICAL RULES - READ CAREFULLY:**
 
-2. PROBLEM-SOLVING APPROACH (Weight: 40%)
-   - Asks clarifying questions before diving in
-   - Breaks down complex problems systematically
-   - Considers multiple approaches and compares them
-   - Thinks through edge cases and constraints
-   - Iterates and refines solutions when prompted
-   - 90-100: Methodical, considers alternatives, identifies optimal approach
-   - 75-89: Good structured thinking, covers most cases
-   - 60-74: Somewhat structured but misses edge cases or better approaches
-   - 40-59: Scattered thinking, struggles to form coherent approach
-   - Below 40: Cannot formulate logical approach
+1. **INCOMPLETE INTERVIEWS GET HARSH PENALTIES:**
+   - If time spent < 2 minutes: Overall score CANNOT exceed 20
+   - If answered < 50% of questions: Overall score CANNOT exceed 40
+   - If completion ratio < 30%: Overall score CANNOT exceed 35
+   - If they quit early or barely engaged: Reflect that in ALL scores
 
-3. COMMUNICATION CLARITY (Weight: 25%)
-   - Explains thought process clearly as they work
-   - Uses analogies or examples to illustrate complex ideas
-   - Responds directly to questions without excessive rambling
-   - Checks for interviewer understanding
-   - 90-100: Crystal clear explanations, teaches concepts effectively
-   - 75-89: Generally clear, minor areas of confusion
-   - 60-74: Understandable but requires follow-up questions
-   - 40-59: Often unclear or hard to follow
-   - Below 40: Cannot articulate thoughts coherently
+2. **ACTUALLY READ THE ENTIRE CONVERSATION:**
+   - Evaluate EVERY question and answer pair
+   - Don't be lenient - if they got something wrong, call it out
+   - Empty answers, "I don't know", or no answers = 0 points for that question
+   - Partial answers get partial credit ONLY if technically correct
+   - Wrong answers are WORSE than no answer - deduct points
 
-**CALCULATE OVERALL SCORE:**
-- Overall Score = (Technical × 0.35) + (Problem-Solving × 0.40) + (Communication × 0.25)
-- Round to nearest integer
-- Do NOT just average the three scores - use the weighted formula above
+3. **MATH MUST ADD UP - USE WEIGHTED FORMULA:**
+   - Overall Score = (Technical × 0.35) + (Problem-Solving × 0.40) + (Communication × 0.25)
+   - DO NOT just average the three numbers
+   - Round to nearest integer
+   - Double-check your math before outputting
 
-**OUTPUT FORMAT (VALID JSON ONLY):**
+4. **SCORING SCALE (BE STRICT):**
+
+   TECHNICAL KNOWLEDGE (35% weight):
+   - 90-100: Expert level, mentions trade-offs, optimizations, edge cases unprompted
+   - 75-89: Solid understanding, mostly correct, minor gaps
+   - 60-74: Basic grasp but misses key concepts or makes mistakes
+   - 40-59: Significant gaps, several wrong answers
+   - 20-39: Major misconceptions, mostly wrong
+   - 0-19: Didn't answer or completely wrong
+
+   PROBLEM-SOLVING (40% weight):
+   - 90-100: Systematic approach, considers alternatives, identifies optimal solution
+   - 75-89: Structured thinking, covers most cases
+   - 60-74: Some structure but misses edge cases or better approaches
+   - 40-59: Scattered, struggles to form coherent plan
+   - 20-39: No clear approach, guessing
+   - 0-19: Didn't attempt or incoherent
+
+   COMMUNICATION (25% weight):
+   - 90-100: Crystal clear, teaches concepts effectively
+   - 75-89: Generally clear with minor confusion
+   - 60-74: Understandable but needs follow-up
+   - 40-59: Often unclear or rambling
+   - 20-39: Hard to follow
+   - 0-19: Cannot articulate thoughts
+
+5. **BE SPECIFIC IN FEEDBACK:**
+   - Quote actual things they said (or didn't say)
+   - Reference specific questions they struggled with
+   - No generic bullshit like "good communication" - give examples
+   - If they bombed, say so clearly
+
+**OUTPUT FORMAT (MUST BE VALID JSON):**
 {
-  "overallScore": <calculated using weighted formula>,
+  "overallScore": <integer 0-100, calculated using weighted formula>,
   "breakdown": {
-    "technical": <0-100>,
-    "problemSolving": <0-100>,
-    "communication": <0-100>
+    "technical": <integer 0-100>,
+    "problemSolving": <integer 0-100>,
+    "communication": <integer 0-100>
   },
   "strengths": [
-    "Quote or reference their specific strong response",
-    "Another specific strength with example",
-    "Limit to 5 most impactful strengths which are super in-detail about details"
+    "Specific example of what they did well (quote or reference actual response)",
+    "Another specific strength with evidence from conversation",
+    "Max 5 items, be detailed and reference actual moments"
   ],
   "gaps": [
-    "Specific concept they struggled with or got wrong",
-    "Missed edge case or approach they didn't consider",
-    "Limit to 5 most critical gaps which are super in-detail about details"
+    "Specific concept/question they got wrong or struggled with",
+    "Specific mistake they made with explanation why it's wrong",
+    "Max 5 items, be brutally honest"
   ],
   "improvement": [
-    "Concrete study topic: 'Review [specific concept] focusing on [specific aspect]'",
-    "Practice recommendation: 'Practice [type of problem] on [platform/resource]'",
-    "Skill development: 'Work on [specific skill] by [specific action]'",
-    "Limit to 5 actionable items which are super in-detail about details"
+    "Concrete action: 'Study [specific topic] focusing on [specific aspect they missed]'",
+    "Practice: 'Work on [type of problem] to improve [specific skill]'",
+    "Max 5 actionable items tied to their actual gaps"
   ]
 }
 
-**MAKE IT REAL:**
-- Reference actual things they said or didn't say
-- No generic feedback - tie everything to this specific interview
-- Be honest but constructive
+**REMEMBER:**
+- Short interviews (< 5min) = bad scores
+- Incomplete interviews = reflect that in score
+- Wrong > No answer = penalize heavily
+- Math must be correct: Overall = (T×0.35) + (P×0.40) + (C×0.25)
+- Be honest, be specific, be harsh if needed
 
 Interview Type: ${interviewType}
-Conversation:
-${summary}
+
+Full Conversation:
+${fullConversation}
 `;
 
   const response = await groq.chat.completions.create({
@@ -106,14 +136,14 @@ ${summary}
       {
         role: "system",
         content:
-          "you are a scoring assistant. you MUST respond with valid json only. no markdown, no code blocks, no explanations. just raw json.",
+          "You are a scoring assistant. Respond with ONLY valid JSON. No markdown, no code blocks, no explanations. Just raw JSON.",
       },
       {
         role: "user",
         content: rules,
       },
     ],
-    temperature: 0.6,
+    temperature: 0.3, // Lower temperature for more consistent scoring
     response_format: { type: "json_object" },
   });
 
@@ -122,9 +152,6 @@ ${summary}
 
   // clean up any markdown code blocks
   content = content.replace(/```json\n?/g, "").replace(/```\n?/g, "");
-
-  // replace markdown bullets with proper json arrays
-  content = content.replace(/\* /g, "");
 
   // extract json from response
   let jsonMatch = content.match(/\{[\s\S]*\}/);
