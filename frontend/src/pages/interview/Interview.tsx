@@ -160,6 +160,15 @@ const Interview = () => {
         setCurrentQuestion(data.question);
         setIsFollowup(false);
         setIsWaitingForResponse(false);
+
+        // Reset code and whiteboard for new main question
+        if (data.resetEditor) {
+          setCode("");
+          if (whiteboardRef.current) {
+            whiteboardRef.current.clear();
+          }
+        }
+
         // play audio if available
         if (data.audio) {
           playAudio(data.audio);

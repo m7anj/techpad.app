@@ -267,6 +267,7 @@ export default function setupWebSocketRoutes(app) {
                     question: nextQuestionText,
                     questionIndex: session.currentQuestionIndex,
                     audio: audioBase64, // base64 encoded mp3
+                    resetEditor: true, // Reset code and whiteboard for new main question
                   }),
                 );
               } else {
@@ -308,6 +309,7 @@ export default function setupWebSocketRoutes(app) {
                     question: nextQuestionText,
                     questionIndex: session.currentQuestionIndex,
                     audio: audioBase64, // base64 encoded mp3
+                    resetEditor: true, // Reset code and whiteboard for new main question
                   }),
                 );
               } else {
