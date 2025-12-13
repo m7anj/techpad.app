@@ -18,15 +18,6 @@ const Dashboard = () => {
   const [heroQuote] = useState(
     () => HERO_QUOTES[Math.floor(Math.random() * HERO_QUOTES.length)],
   );
-  const [stats] = useState({
-    solved: 0,
-    totalProblems: 12,
-    easyCompleted: 0,
-    mediumCompleted: 0,
-    hardCompleted: 0,
-    streak: 0,
-    rank: "Beginner",
-  });
 
   useEffect(() => {
     const fetchPresets = async () => {
@@ -128,8 +119,6 @@ const Dashboard = () => {
     // Default
     return "tag-default";
   };
-
-  const progressPercent = (stats.solved / stats.totalProblems) * 100;
 
   // Filter presets based on search query
   const filteredPresets = presets.filter((preset) => {

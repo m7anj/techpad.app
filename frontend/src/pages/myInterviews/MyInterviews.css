@@ -485,8 +485,8 @@
 }
 
 .my-interviews .breakdown-value {
-    font-weight: 700;
-    color: var(--primary);
+    font-weight: 400;
+    color: white;
 }
 
 .my-interviews .breakdown-bar-bg {
