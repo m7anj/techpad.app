@@ -161,6 +161,18 @@ const Interview = () => {
         setIsFollowup(false);
         setIsWaitingForResponse(false);
 
+        // Stop recording if active
+        if (recognitionRef.current && isRecording) {
+          try {
+            recognitionRef.current.stop();
+          } catch (err) {
+            console.log("Recognition already stopped");
+          }
+          setIsRecording(false);
+          setAnswer("");
+          setInterimTranscript("");
+        }
+
         // Reset code and whiteboard for new main question
         if (data.resetEditor) {
           setCode("");
