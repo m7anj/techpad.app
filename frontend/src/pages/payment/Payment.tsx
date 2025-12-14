@@ -410,12 +410,15 @@ const Payment = () => {
                 </ul>
                 <div className="plan-action">
                   {isSignedIn ? (
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => handleSelectPlan("pro-yearly")}
+                    <a
+                      href="https://buy.stripe.com/test_fZu14n4sB8SQc1301a8EM01"
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
-                      Upgrade to Pro Yearly
-                    </button>
+                      <button className="btn btn-primary">
+                        Upgrade to Pro Yearly
+                      </button>
+                    </a>
                   ) : (
                     <SignInButton mode="modal">
                       <button className="btn btn-primary">Get started</button>
