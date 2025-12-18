@@ -41,6 +41,7 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
   const subscriptionPlan = user?.publicMetadata?.plan as string | undefined;
   const subscriptionStatus = user?.publicMetadata?.subscriptionStatus as string | undefined;
   const isProMember = subscriptionPlan && (subscriptionPlan.includes('pro')) && subscriptionStatus === 'active';
+  const isFreeMember = !isProMember; // If not pro, then free
 
   const handleLinkClick = (
     e: React.MouseEvent<HTMLAnchorElement>,
@@ -118,7 +119,7 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
           </div>
         </div>
         <div className="nav-actions">
-          {/* Show Pro badge if user has active subscription */}
+          {/* Show membership badge */}
           {isProMember && (
             <div className="role-badge-container">
               <span className="role-badge pro">
@@ -133,6 +134,24 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
                   <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                 </svg>
                 Pro
+              </span>
+            </div>
+          )}
+          {isFreeMember && (
+            <div className="role-badge-container">
+              <span className="role-badge free">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+                Free
               </span>
             </div>
           )}

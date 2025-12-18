@@ -1,10 +1,12 @@
 import express from "express";
 import { requireAuth } from "@clerk/express";
 import { getUserByIdHandler } from "../controllers/userController.js";
+import { checkSubscriptionExpiry } from "../middleware/checkSubscriptionExpiry.js";
 
 const router = express.Router();
 
-router.get("/me", requireAuth(), getUserByIdHandler);
+// Check subscription expiry before returning user data
+router.get("/me", requireAuth(), checkSubscriptionExpiry, getUserByIdHandler);
 router.post("/webhooks/clerk", requireAuth(), async (req, res) => {
   try {
     const { id } = req.body;

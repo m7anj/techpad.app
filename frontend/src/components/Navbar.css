@@ -214,6 +214,19 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
+.role-badge.free {
+    background: linear-gradient(
+        135deg,
+        rgba(100, 116, 139, 0.2),
+        rgba(148, 163, 184, 0.2)
+    );
+    color: #cbd5e1;
+    border-color: #64748b;
+    box-shadow:
+        0 0 8px rgba(100, 116, 139, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
 .role-badge.pro {
     background: linear-gradient(
         135deg,

@@ -72,50 +72,80 @@ async function handleStripeWebhook(req, res) {
           return res.status(400).json({ error: "User not found" });
         }
 
-        // Get subscription details from Stripe
-        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-        const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
-
+        // Determine plan type
         let planType = "pro_monthly";
         if (session.metadata?.plan_type) {
           planType = session.metadata.plan_type;
-        } else if (session.mode === "subscription") {
-          const interval = subscription.items.data[0]?.plan?.interval;
-          planType = interval === "year" ? "pro_yearly" : "pro_monthly";
+        }
+
+        // Get subscription details from Stripe
+        let currentPeriodEnd = null;
+        if (subscriptionId) {
+          try {
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+            if (subscription.current_period_end) {
+              currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+
+              // If plan type wasn't in metadata, get it from subscription
+              if (!session.metadata?.plan_type && session.mode === "subscription") {
+                const interval = subscription.items.data[0]?.plan?.interval;
+                planType = interval === "year" ? "pro_yearly" : "pro_monthly";
+              }
+            }
+          } catch (subError) {
+            console.error("⚠️  Error retrieving subscription details:", subError.message);
+          }
         }
 
         console.log("Updating Clerk user with plan:", planType);
-        console.log("Subscription ends at:", currentPeriodEnd.toISOString());
+        if (currentPeriodEnd) {
+          console.log("Subscription ends at:", currentPeriodEnd.toISOString());
+        }
 
         // Update Clerk user with subscription info
+        const clerkMetadata = {
+          role: "pro", // Upgrade to pro role
+          stripeCustomerId: customerId,
+          subscriptionId: subscriptionId,
+          plan: planType,
+          subscriptionStatus: "active",
+          updatedAt: new Date().toISOString(),
+        };
+
+        // Only add subscriptionEndsAt if we have a valid date
+        if (currentPeriodEnd) {
+          clerkMetadata.subscriptionEndsAt = currentPeriodEnd.toISOString();
+        }
+
         await clerkClient.users.updateUser(clerkUserId, {
-          publicMetadata: {
-            role: "pro", // Upgrade to pro role
-            stripeCustomerId: customerId,
-            subscriptionId: subscriptionId,
-            plan: planType,
-            subscriptionStatus: "active",
-            subscriptionEndsAt: currentPeriodEnd.toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
+          publicMetadata: clerkMetadata,
         });
 
         console.log("✅ Updated Clerk metadata to pro");
 
         // Update Supabase database - upgrade user to pro with unlimited interviews
         try {
+          const dbUpdateData = {
+            numberOfInterviewsAllowed: 999999, // Unlimited for pro users
+            subscriptionStatus: "active",
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscriptionId,
+          };
+
+          // Only add subscriptionEndsAt if we have a valid date
+          if (currentPeriodEnd) {
+            dbUpdateData.subscriptionEndsAt = currentPeriodEnd;
+          }
+
           await prisma.user.update({
             where: { clerkUserId: clerkUserId },
-            data: {
-              numberOfInterviewsAllowed: 999999, // Unlimited for pro users
-              subscriptionStatus: "active",
-              stripeCustomerId: customerId,
-              stripeSubscriptionId: subscriptionId,
-              subscriptionEndsAt: currentPeriodEnd,
-            },
+            data: dbUpdateData,
           });
+
           console.log("✅ Updated Supabase database - user now has unlimited interviews");
-          console.log(`   Database record updated with subscription end date: ${currentPeriodEnd.toISOString()}`);
+          if (currentPeriodEnd) {
+            console.log(`   Database record updated with subscription end date: ${currentPeriodEnd.toISOString()}`);
+          }
         } catch (dbError) {
           console.error("❌ Error updating Supabase:", dbError);
         }
