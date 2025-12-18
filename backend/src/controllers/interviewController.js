@@ -1,12 +1,10 @@
-import {
-  setupInterview,
-  createInterviewSession,
-} from "../services/interviewService.js";
+import { setupInterview, createInterviewSession } from "../services/interviewService.js";
 import { getExplorePresetById } from "../services/exploreService.js";
-import { requireAuth } from "@clerk/express";
 import { canAccessPremium } from "../middleware/auth.js";
 
-// Handle a request to start an interview
+
+
+// HANDLER TO START INTERVIEW SESSION
 async function getInterviewQuestionsHandler(req, res) {
   const { id } = req.params;
   try {
@@ -19,7 +17,9 @@ async function getInterviewQuestionsHandler(req, res) {
   return questions;
 }
 
-// Create a secure interview session
+
+
+// HANDLER TO CREATE AN INTERVIEW SESSION
 async function createInterviewSessionHandler(req, res) {
   try {
     const { interviewId } = req.body;

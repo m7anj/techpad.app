@@ -1,6 +1,3 @@
-// rbac middleware
-
-// get user role from clerk metadata
 function getUserRole(req) {
   // handle both old and new clerk api versions
   const auth = typeof req.auth === "function" ? req.auth() : req.auth;
@@ -8,7 +5,6 @@ function getUserRole(req) {
   return role;
 }
 
-// check if user has required role
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
     const userRole = getUserRole(req);
@@ -38,16 +34,22 @@ function canAccessPremium(req) {
   return ["owner", "admin", "premium"].includes(role);
 }
 
+
+
 // check if user is admin or owner
 function isAdmin(req) {
   const role = getUserRole(req);
   return ["owner", "admin"].includes(role);
 }
 
+
+
 // check if user is owner
 function isOwner(req) {
   const role = getUserRole(req);
   return role === "owner";
 }
+
+
 
 export { getUserRole, requireRole, canAccessPremium, isAdmin, isOwner };

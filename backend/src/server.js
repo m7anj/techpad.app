@@ -25,6 +25,9 @@ import expressWs from "express-ws";
 
 expressWs(app);
 
+// Trust proxy for rate limiting (needed when behind proxies like nginx, cloudflare, etc)
+app.set("trust proxy", 1);
+
 // Security and Middleware
 app.use(helmet());
 app.use(cors());

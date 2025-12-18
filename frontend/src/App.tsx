@@ -5,6 +5,7 @@ import Dashboard from "./pages/dashboard/Dashboard";
 import LandingPage from "./pages/landing/LandingPage";
 import Interview from "./pages/interview/Interview";
 import Payment from "./pages/payment/Payment";
+import PaymentSuccess from "./pages/payment/PaymentSuccess";
 import MyInterviews from "./pages/myInterviews/MyInterviews";
 import "./styles/globals.css";
 import "./styles/components/clerk.css";
@@ -26,6 +27,7 @@ function App() {
           <Route path="/interview/:id" element={<Interview />} />
           <Route path="/my-interviews" element={<MyInterviews />} />
           <Route path="/pricing" element={<Payment />} />
+          <Route path="/payment/success" element={<PaymentSuccess />} />
         </Routes>
       </SignedIn>
     </div>

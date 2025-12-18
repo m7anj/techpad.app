@@ -10,20 +10,28 @@ async function getUserByIdHandler(req, res) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
+
   try {
     // fetch full user data from clerk to get metadata
     const clerkUser = await clerkClient.users.getUser(clerkUserId);
 
-    // return user info from clerk
+    // return user info from clerk including subscription details
     const user = {
       clerkId: clerkUserId,
       email: clerkUser.emailAddresses?.[0]?.emailAddress,
       username: clerkUser.username,
       imageUrl: clerkUser.imageUrl,
       role: clerkUser.publicMetadata?.role || "free",
+      subscription: {
+        plan: clerkUser.publicMetadata?.plan || "free",
+        status: clerkUser.publicMetadata?.subscriptionStatus || "inactive",
+        stripeCustomerId: clerkUser.publicMetadata?.stripeCustomerId,
+        subscriptionId: clerkUser.publicMetadata?.subscriptionId,
+      },
     };
 
     res.status(200).json(user);
+
   } catch (error) {
     console.error("Error in getUserByIdHandler:", error);
     res.status(500).json({ message: "Error" });

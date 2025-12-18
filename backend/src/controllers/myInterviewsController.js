@@ -1,4 +1,4 @@
-import {
+import { 
   getCompletedInterviewsByUserId as getCompletedInterviews,
   addCompletedInterview as addInterview,
 } from "../services/myInterviewsService.js";

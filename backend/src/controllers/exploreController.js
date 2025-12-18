@@ -1,6 +1,6 @@
 import { getExplorePresets, getExplorePresetById } from "../services/exploreService.js";
 
-// Handle a request to get all the different presets in the Interviews table in the database
+// HANDLER TO GET ALL EXPLORE PRESETS
 
 async function getExplorePresetsHandler(req, res) {
     try {
@@ -12,7 +12,9 @@ async function getExplorePresetsHandler(req, res) {
     }
 }
 
-// Handle a request to get a specific preset by its id
+
+
+// HANDLER TO GET EXPLORE PRESET BY ID
 
 async function getExplorePresetByIdHandler(req, res) {
     const { id } = req.params

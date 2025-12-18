@@ -1,0 +1,94 @@
+TECHPAD TODO LIST
+=================
+
+BEFROE LAUNCH
+----------------------------
+[ ] Add payments integrated into the frontend (no need to redirect to Stripe)
+[ ] Real-time payment UI updates (polling after Stripe redirect)
+[ ] Subscription expiration checker (cron job to downgrade expired users)
+[ ] Block premium interviews for free users
+[ ] Configure production webhooks in Clerk dashboard
+[ ] Configure production webhooks in Stripe dashboard
+[ ] Add error monitoring (Sentry or similar)
+[ ] Test full payment flow end-to-end
+
+
+HIGH PRIORITY - WEEK 1
+-----------------------
+[ ] User profile page with activity heatmap
+[ ] Feedback form page
+[ ] Add 20 more interview questions
+[ ] Show user subscription status in navbar
+[ ] Add "Upgrade to Pro" button/banner for free users
+[ ] Stripe customer portal (manage billing)
+
+
+MEDIUM PRIORITY - WEEK 2-3
+---------------------------
+[ ] Achievement system (start with 10 basic achievements)
+[ ] Daily streak counter
+[ ] Enhanced analytics on profile (score trends, time stats)
+[ ] Discussion/comments on interview questions
+[ ] Search/filter interviews by difficulty, tags, type
+[ ] "My Interviews" page improvements (better feedback display)
+
+
+LOW PRIORITY - MONTH 2+
+------------------------
+[ ] Leaderboard (global, weekly)
+[ ] Daily challenge
+[ ] Video explanations for interviews
+[ ] Code execution environment
+[ ] Voice interview mode
+[ ] Pair programming with other users
+[ ] Study groups
+[ ] Interview replays/recordings
+[ ] Mobile app (PWA first, then native)
+
+
+CONTENT
+-------
+[ ] Add 50 more DSA interviews (arrays, trees, graphs, DP)
+[ ] Add 20 system design interviews (URL shortener, Twitter, etc.)
+[ ] Add 10 behavioral interviews
+[ ] Add 10 frontend interviews
+[ ] Add 10 backend interviews
+
+
+POLISH
+------
+[ ] Better loading states
+[ ] Better error messages
+[ ] Animations/transitions
+[ ] Dark mode
+[ ] Keyboard shortcuts
+[ ] Tutorial/onboarding for new users
+
+
+TECHNICAL DEBT
+--------------
+[ ] Add TypeScript to backend
+[ ] Write tests (at least for webhooks)
+[ ] Add API documentation
+[ ] Database query optimization
+[ ] Add Redis caching
+[ ] CI/CD pipeline
+
+
+MARKETING
+---------
+[ ] SEO-optimized landing page
+[ ] Blog (2-3 posts/week)
+[ ] Email welcome series
+[ ] Social media share cards
+[ ] Referral program
+
+
+CURRENT FOCUS: Get to 100 paying users
+=======================================
+1. Fix payment flow (real-time updates + expiration checker)
+2. Add user profile with stats (retention!)
+3. Add 50 more interviews (content is king)
+4. Launch and market
+
+Everything else can wait.

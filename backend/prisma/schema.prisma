@@ -7,18 +7,34 @@ datasource database {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id                       String    @id @default(uuid())
+  clerkUserId              String    @unique
+  email                    String?
+  numberOfInterviewsAllowed Int      @default(3)
+  subscriptionStatus       String    @default("free")
+  stripeCustomerId         String?   @unique
+  stripeSubscriptionId     String?   @unique
+  subscriptionEndsAt       DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  @@index([clerkUserId])
+  @@index([stripeCustomerId])
+}
+
 model completedInterview {
   id          String    @id @default(uuid())
-  clerkUserId String    // Clerk user ID, no relation needed
   interviewId String
   timeTaken   Int
   score       Float?
   completedAt DateTime  @default(now())
+  clerkUserId String
   feedback    Json?
   messages    Message[]
   interview   Interview @relation(fields: [interviewId], references: [id])
 
-  @@index([clerkUserId]) // Index for faster queries
+  @@index([clerkUserId])
 }
 
 model Interview {
@@ -28,9 +44,9 @@ model Interview {
   description         String
   expectedDuration    Int
   prompt              String
-  tags                String[]             @default([])
   difficulty          String               @default("Medium")
   premium             Boolean              @default(false)
+  tags                String[]             @default([])
   completedInterviews completedInterview[]
 }
 
@@ -45,7 +61,7 @@ model Message {
 
 model InterviewSession {
   id           String   @id @default(uuid())
-  clerkUserId  String   // Clerk user ID
+  clerkUserId  String
   interviewId  String
   sessionToken String   @unique
   createdAt    DateTime @default(now())

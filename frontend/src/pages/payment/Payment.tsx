@@ -267,11 +267,7 @@ const Payment = () => {
                 </ul>
                 <div className="plan-action">
                   {isSignedIn ? (
-                    <a
-                      href="https://buy.stripe.com/test_8x25kDe3b8SQaWZ15e8EM00"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <a href="https://buy.stripe.com/test_8x25kDe3b8SQaWZ15e8EM00">
                       <button className="btn btn-primary">
                         Upgrade to Pro
                       </button>
@@ -410,11 +406,7 @@ const Payment = () => {
                 </ul>
                 <div className="plan-action">
                   {isSignedIn ? (
-                    <a
-                      href="https://buy.stripe.com/test_fZu14n4sB8SQc1301a8EM01"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <a href="https://buy.stripe.com/test_fZu14n4sB8SQc1301a8EM01">
                       <button className="btn btn-primary">
                         Upgrade to Pro Yearly
                       </button>

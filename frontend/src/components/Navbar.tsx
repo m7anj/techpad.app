@@ -1,4 +1,4 @@
-import { UserButton, useAuth } from "@clerk/clerk-react";
+import { UserButton, useAuth, useUser } from "@clerk/clerk-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Logo from "./Logo/Logo";
@@ -11,6 +11,7 @@ interface NavbarProps {
 export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
   const location = useLocation();
   const { getToken } = useAuth();
+  const { user } = useUser();
   const [userRole, setUserRole] = useState<string | null>(null);
 
   const isActive = (path: string) => location.pathname === path;
@@ -25,8 +26,8 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
           },
         });
         if (response.ok) {
-          const user = await response.json();
-          setUserRole(user.role || "free");
+          const userData = await response.json();
+          setUserRole(userData.role || "free");
         }
       } catch (error) {
         console.error("Error fetching user role:", error);
@@ -35,6 +36,11 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
 
     fetchUserRole();
   }, [getToken]);
+
+  // Get subscription plan from Clerk metadata
+  const subscriptionPlan = user?.publicMetadata?.plan as string | undefined;
+  const subscriptionStatus = user?.publicMetadata?.subscriptionStatus as string | undefined;
+  const isProMember = subscriptionPlan && (subscriptionPlan.includes('pro')) && subscriptionStatus === 'active';
 
   const handleLinkClick = (
     e: React.MouseEvent<HTMLAnchorElement>,
@@ -112,7 +118,26 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
           </div>
         </div>
         <div className="nav-actions">
-          {userRole && (
+          {/* Show Pro badge if user has active subscription */}
+          {isProMember && (
+            <div className="role-badge-container">
+              <span className="role-badge pro">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+                Pro
+              </span>
+            </div>
+          )}
+          {/* Show admin/owner badges if applicable */}
+          {userRole && (userRole === "owner" || userRole === "admin") && (
             <div className="role-badge-container">
               {userRole === "owner" && (
                 <span className="role-badge owner">
@@ -124,7 +149,7 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
                     stroke="currentColor"
                     strokeWidth="2"
                   >
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
                   Owner
                 </span>
@@ -143,25 +168,6 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
                   </svg>
                   Admin
                 </span>
-              )}
-              {userRole === "premium" && (
-                <span className="role-badge premium">
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 6v6l4 2" />
-                  </svg>
-                  Premium
-                </span>
-              )}
-              {userRole === "free" && (
-                <span className="role-badge free">Free</span>
               )}
             </div>
           )}

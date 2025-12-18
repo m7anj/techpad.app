@@ -324,3 +324,87 @@
         font-size: 0.875rem;
     }
 }
+
+/* Payment Success Styles */
+.success-container {
+    max-width: 600px;
+    margin: 4rem auto;
+    text-align: center;
+    background: var(--surface-glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    box-shadow: var(--shadow-3d);
+}
+
+.success-icon {
+    margin: 0 auto 1.5rem;
+    animation: scaleIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.success-title {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 1rem;
+}
+
+.success-message {
+    font-size: 1.25rem;
+    color: var(--text);
+    margin-bottom: 1rem;
+}
+
+.success-description {
+    font-size: 1rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+
+.session-id {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: monospace;
+    margin-bottom: 1.5rem;
+    padding: 0.5rem;
+    background: var(--surface);
+    border-radius: 8px;
+}
+
+.success-actions {
+    margin-bottom: 1rem;
+}
+
+.redirect-message {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .success-container {
+        margin: 2rem auto;
+        padding: 2rem 1.5rem;
+    }
+
+    .success-title {
+        font-size: 1.5rem;
+    }
+
+    .success-message {
+        font-size: 1.1rem;
+    }
+}

@@ -1,5 +1,8 @@
 import { Webhook } from "svix";
 import { clerkClient } from "@clerk/clerk-sdk-node";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 async function handleClerkWebhook(req, res) {
   console.log("=== WEBHOOK RECEIVED ===");
@@ -49,12 +52,44 @@ async function handleClerkWebhook(req, res) {
 
   try {
     if (type === "user.created") {
-      // No need to create user in database - Clerk is the source of truth
-      // Just log the event for tracking
       console.log(`✅ New user registered in Clerk: ${data.id}`);
-      return res
-        .status(200)
-        .json({ success: true, message: "User registered in Clerk" });
+
+      // Create user in database
+      const email = data.email_addresses?.[0]?.email_address;
+
+      try {
+        const user = await prisma.user.create({
+          data: {
+            clerkUserId: data.id,
+            email: email,
+            numberOfInterviewsAllowed: 3, // Default free tier
+          },
+        });
+
+        console.log(`✅ User created in database:`, {
+          id: user.id,
+          clerkUserId: user.clerkUserId,
+          email: user.email,
+          numberOfInterviewsAllowed: user.numberOfInterviewsAllowed,
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: "User created successfully",
+          user: {
+            id: user.id,
+            clerkUserId: user.clerkUserId,
+            numberOfInterviewsAllowed: user.numberOfInterviewsAllowed,
+          }
+        });
+      } catch (dbError) {
+        console.error("❌ Error creating user in database:", dbError);
+        // Still return success to Clerk so it doesn't retry
+        return res.status(200).json({
+          success: true,
+          message: "User registered in Clerk (database error logged)"
+        });
+      }
     }
 
     // For other event types, just acknowledge receipt
