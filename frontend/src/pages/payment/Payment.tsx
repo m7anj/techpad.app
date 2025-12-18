@@ -1,19 +1,57 @@
-import { SignInButton, useUser } from "@clerk/clerk-react";
+import { SignInButton, useUser, useAuth } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import Logo from "../../components/Logo";
 import { Navbar } from "../../components/Navbar";
 import "./Payment.css";
 
+const PRICE_IDS = {
+  pro_monthly: "price_1SdrpdE889nMAH6yTqfRE4r2",
+  pro_yearly: "price_1SeB7qE889nMAH6yykIydOuI",
+};
+
 const Payment = () => {
   const { isSignedIn } = useUser();
+  const { getToken } = useAuth();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState<string | null>(null);
 
-  const handleSelectPlan = (planType: string) => {
+  const handleSelectPlan = async (planType: "pro_monthly" | "pro_yearly") => {
     if (!isSignedIn) {
       return;
     }
-    // Stripe integration will go here
-    console.log("Selected plan:", planType);
+
+    setLoading(planType);
+
+    try {
+      const token = await getToken();
+
+      const response = await fetch("http://localhost:4000/checkout/create-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          priceId: PRICE_IDS[planType],
+          planType: planType,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create checkout session");
+      }
+
+      const data = await response.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error("Error creating checkout session:", error);
+      alert("Failed to start checkout. Please try again.");
+      setLoading(null);
+    }
   };
 
   return (
@@ -267,11 +305,13 @@ const Payment = () => {
                 </ul>
                 <div className="plan-action">
                   {isSignedIn ? (
-                    <a href="https://buy.stripe.com/test_8x25kDe3b8SQaWZ15e8EM00">
-                      <button className="btn btn-primary">
-                        Upgrade to Pro
-                      </button>
-                    </a>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => handleSelectPlan("pro_monthly")}
+                      disabled={loading !== null}
+                    >
+                      {loading === "pro_monthly" ? "Loading..." : "Upgrade to Pro"}
+                    </button>
                   ) : (
                     <SignInButton mode="modal">
                       <button className="btn btn-primary">Get started</button>
@@ -406,11 +446,13 @@ const Payment = () => {
                 </ul>
                 <div className="plan-action">
                   {isSignedIn ? (
-                    <a href="https://buy.stripe.com/test_fZu14n4sB8SQc1301a8EM01">
-                      <button className="btn btn-primary">
-                        Upgrade to Pro Yearly
-                      </button>
-                    </a>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => handleSelectPlan("pro_yearly")}
+                      disabled={loading !== null}
+                    >
+                      {loading === "pro_yearly" ? "Loading..." : "Upgrade to Pro Yearly"}
+                    </button>
                   ) : (
                     <SignInButton mode="modal">
                       <button className="btn btn-primary">Get started</button>

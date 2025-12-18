@@ -1,7 +1,9 @@
 import Stripe from "stripe";
 import { clerkClient } from "@clerk/clerk-sdk-node";
+import { PrismaClient } from "@prisma/client";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const prisma = new PrismaClient();
 
 async function handleStripeWebhook(req, res) {
   console.log("=== STRIPE WEBHOOK RECEIVED ===");
@@ -70,31 +72,55 @@ async function handleStripeWebhook(req, res) {
           return res.status(400).json({ error: "User not found" });
         }
 
+        // Get subscription details from Stripe
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+
         let planType = "pro_monthly";
         if (session.metadata?.plan_type) {
           planType = session.metadata.plan_type;
         } else if (session.mode === "subscription") {
-          const subscription = await stripe.subscriptions.retrieve(
-            subscriptionId
-          );
           const interval = subscription.items.data[0]?.plan?.interval;
           planType = interval === "year" ? "pro_yearly" : "pro_monthly";
         }
 
         console.log("Updating Clerk user with plan:", planType);
+        console.log("Subscription ends at:", currentPeriodEnd.toISOString());
 
         // Update Clerk user with subscription info
         await clerkClient.users.updateUser(clerkUserId, {
           publicMetadata: {
+            role: "pro", // Upgrade to pro role
             stripeCustomerId: customerId,
             subscriptionId: subscriptionId,
             plan: planType,
             subscriptionStatus: "active",
+            subscriptionEndsAt: currentPeriodEnd.toISOString(),
             updatedAt: new Date().toISOString(),
           },
         });
 
-        console.log("✅ Successfully updated user subscription status");
+        console.log("✅ Updated Clerk metadata to pro");
+
+        // Update Supabase database - upgrade user to pro with unlimited interviews
+        try {
+          await prisma.user.update({
+            where: { clerkUserId: clerkUserId },
+            data: {
+              numberOfInterviewsAllowed: 999999, // Unlimited for pro users
+              subscriptionStatus: "active",
+              stripeCustomerId: customerId,
+              stripeSubscriptionId: subscriptionId,
+              subscriptionEndsAt: currentPeriodEnd,
+            },
+          });
+          console.log("✅ Updated Supabase database - user now has unlimited interviews");
+          console.log(`   Database record updated with subscription end date: ${currentPeriodEnd.toISOString()}`);
+        } catch (dbError) {
+          console.error("❌ Error updating Supabase:", dbError);
+        }
+
+        console.log("✅ Successfully upgraded user to Pro membership");
         break;
       }
 
@@ -106,6 +132,8 @@ async function handleStripeWebhook(req, res) {
         const subscription = event.data.object;
         console.log("🔄 Subscription updated:", subscription.id);
 
+        const updatedPeriodEnd = new Date(subscription.current_period_end * 1000);
+
         // Find user by Stripe customer ID
         const users = await clerkClient.users.getUserList();
         const user = users.data.find(
@@ -113,14 +141,30 @@ async function handleStripeWebhook(req, res) {
         );
 
         if (user) {
+          // Update Clerk metadata
           await clerkClient.users.updateUser(user.id, {
             publicMetadata: {
               ...user.publicMetadata,
               subscriptionStatus: subscription.status,
+              subscriptionEndsAt: updatedPeriodEnd.toISOString(),
               updatedAt: new Date().toISOString(),
             },
           });
           console.log("✅ Updated subscription status to:", subscription.status);
+
+          // Update Supabase database
+          try {
+            await prisma.user.update({
+              where: { clerkUserId: user.id },
+              data: {
+                subscriptionStatus: subscription.status,
+                subscriptionEndsAt: updatedPeriodEnd,
+              },
+            });
+            console.log("✅ Updated database with new subscription end date");
+          } catch (dbError) {
+            console.error("❌ Error updating database:", dbError);
+          }
         }
         break;
       }
@@ -139,15 +183,35 @@ async function handleStripeWebhook(req, res) {
         );
 
         if (user) {
+          // Downgrade in Clerk
           await clerkClient.users.updateUser(user.id, {
             publicMetadata: {
               ...user.publicMetadata,
+              role: "free", // Downgrade to free
               subscriptionStatus: "cancelled",
               plan: "free",
+              subscriptionEndsAt: null,
               updatedAt: new Date().toISOString(),
             },
           });
-          console.log("✅ Subscription cancelled for user");
+          console.log("✅ Downgraded Clerk metadata to free");
+
+          // Downgrade in Supabase - reset to 3 interviews
+          try {
+            await prisma.user.update({
+              where: { clerkUserId: user.id },
+              data: {
+                numberOfInterviewsAllowed: 3,
+                subscriptionStatus: "cancelled",
+                subscriptionEndsAt: null,
+              },
+            });
+            console.log("✅ Downgraded Supabase - reset to 3 interviews");
+          } catch (dbError) {
+            console.error("❌ Error downgrading in Supabase:", dbError);
+          }
+
+          console.log("✅ Subscription cancelled and user downgraded to free");
         }
         break;
       }

@@ -54,6 +54,20 @@ async function handleClerkWebhook(req, res) {
     if (type === "user.created") {
       console.log(`✅ New user registered in Clerk: ${data.id}`);
 
+      // Set default role in Clerk metadata
+      try {
+        await clerkClient.users.updateUser(data.id, {
+          publicMetadata: {
+            role: "free",
+            plan: "free",
+            subscriptionStatus: "inactive",
+          },
+        });
+        console.log(`✅ Set default role metadata for user: ${data.id}`);
+      } catch (metadataError) {
+        console.error("❌ Error setting user metadata:", metadataError);
+      }
+
       // Create user in database
       const email = data.email_addresses?.[0]?.email_address;
 
