@@ -109,6 +109,7 @@ async function handleStripeWebhook(req, res) {
           subscriptionId: subscriptionId,
           plan: planType,
           subscriptionStatus: "active",
+          interviewsAllowed: 999999, // Cache in Clerk to avoid flashing
           updatedAt: new Date().toISOString(),
         };
 
@@ -234,6 +235,7 @@ async function handleStripeWebhook(req, res) {
               role: "free", // Downgrade to free
               subscriptionStatus: "cancelled",
               plan: "free",
+              interviewsAllowed: 3, // Reset to free tier
               subscriptionEndsAt: null,
               updatedAt: new Date().toISOString(),
             },

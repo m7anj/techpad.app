@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
-import Logo from "../../components/Logo";
 import "./Payment.css";
 
 const PaymentSuccess = () => {
@@ -11,7 +10,6 @@ const PaymentSuccess = () => {
   const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
-    // Countdown timer
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -32,7 +30,6 @@ const PaymentSuccess = () => {
     <div className="payment">
       <header className="header">
         <div className="container">
-          <Logo size="medium" variant="default" className="animate-fade-in" />
         </div>
       </header>
       <main className="main">

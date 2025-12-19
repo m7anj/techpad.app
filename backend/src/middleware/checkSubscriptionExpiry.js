@@ -57,6 +57,7 @@ async function checkSubscriptionExpiry(req, res, next) {
           role: "free",
           plan: "free",
           subscriptionStatus: "expired",
+          interviewsAllowed: 3,
           subscriptionEndsAt: null,
           updatedAt: new Date().toISOString(),
         },

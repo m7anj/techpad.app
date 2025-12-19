@@ -1,24 +1,26 @@
 import React from "react";
-import rocketIcon from "../../icon/rocket.png";
+import logoImg from "../../icons/logo.png";
+import logoTextImg from "../../icons/logo-text.png";
 import "./Logo.css";
 
 interface LogoProps {
   size?: "small" | "medium" | "large";
   variant?: "default" | "white" | "minimal";
   className?: string;
+  showText?: boolean;
 }
 
 const Logo: React.FC<LogoProps> = ({
-  size = "medium",
+  size = "large",
   variant = "default",
   className = "",
+  showText = false,
 }) => {
+  const logoSrc = showText ? logoTextImg : logoImg;
+
   return (
     <div className={`logo logo--${size} logo--${variant} ${className}`}>
-      <div className="logo__text">
-        <span className="logo__name">techpad</span>
-        <span className="logo__domain">.app</span>
-      </div>
+      <img src={logoSrc} alt="techpad" className="logo__image" />
     </div>
   );
 };

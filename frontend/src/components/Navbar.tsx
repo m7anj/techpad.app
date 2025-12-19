@@ -1,7 +1,7 @@
 import { UserButton, useAuth, useUser } from "@clerk/clerk-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import Logo from "./Logo/Logo";
+import Logo from "./Logo";
 import "./Navbar.css";
 
 interface NavbarProps {
@@ -36,14 +36,20 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
       }
     };
 
-    fetchUserData();
-  }, [getToken]);
+    if (user) {
+      fetchUserData();
+    }
+  }, [getToken, user]);
 
   // Get subscription plan from Clerk metadata
   const subscriptionPlan = user?.publicMetadata?.plan as string | undefined;
   const subscriptionStatus = user?.publicMetadata?.subscriptionStatus as string | undefined;
   const isProMember = subscriptionPlan && (subscriptionPlan.includes('pro')) && subscriptionStatus === 'active';
-  const isFreeMember = !isProMember; // If not pro, then free
+  const isFreeMember = !isProMember;
+
+  // Get interviewsAllowed from Clerk metadata to avoid flashing
+  const interviewsAllowedFromMetadata = user?.publicMetadata?.interviewsAllowed as number | undefined;
+  const displayInterviewsLeft = interviewsLeft ?? interviewsAllowedFromMetadata ?? null;
 
   const handleLinkClick = (
     e: React.MouseEvent<HTMLAnchorElement>,
@@ -59,7 +65,7 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
     <nav className="nav">
       <div className="nav-content">
         <div className="logo">
-          <Logo size="small" variant="default" />
+          <Logo size="small" showText={true} />
         </div>
         <div className="nav-center">
           <div className="nav-links-container">
@@ -158,7 +164,7 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
             </div>
           )}
           {/* Show interview count for free users */}
-          {isFreeMember && interviewsLeft !== null && (
+          {isFreeMember && displayInterviewsLeft !== null && (
             <div className="role-badge-container">
               <span className="role-badge interviews">
                 <svg
@@ -171,7 +177,7 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
                 >
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
-                {interviewsLeft} left
+                {displayInterviewsLeft} left
               </span>
             </div>
           )}
