@@ -11,10 +11,15 @@ const PRICE_IDS = {
 };
 
 const Payment = () => {
-  const { isSignedIn } = useUser();
+  const { isSignedIn, user } = useUser();
   const { getToken } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
+
+  // Check if user already has pro membership
+  const subscriptionPlan = user?.publicMetadata?.plan as string | undefined;
+  const subscriptionStatus = user?.publicMetadata?.subscriptionStatus as string | undefined;
+  const isProMember = subscriptionPlan && subscriptionPlan.includes('pro') && subscriptionStatus === 'active';
 
   const handleSelectPlan = async (planType: "pro_monthly" | "pro_yearly") => {
     if (!isSignedIn) {
@@ -305,13 +310,19 @@ const Payment = () => {
                 </ul>
                 <div className="plan-action">
                   {isSignedIn ? (
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => handleSelectPlan("pro_monthly")}
-                      disabled={loading !== null}
-                    >
-                      {loading === "pro_monthly" ? "Loading..." : "Upgrade to Pro"}
-                    </button>
+                    isProMember ? (
+                      <button className="btn btn-secondary" disabled>
+                        Current Plan
+                      </button>
+                    ) : (
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => handleSelectPlan("pro_monthly")}
+                        disabled={loading !== null}
+                      >
+                        {loading === "pro_monthly" ? "Loading..." : "Upgrade to Pro"}
+                      </button>
+                    )
                   ) : (
                     <SignInButton mode="modal">
                       <button className="btn btn-primary">Get started</button>
@@ -446,13 +457,19 @@ const Payment = () => {
                 </ul>
                 <div className="plan-action">
                   {isSignedIn ? (
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => handleSelectPlan("pro_yearly")}
-                      disabled={loading !== null}
-                    >
-                      {loading === "pro_yearly" ? "Loading..." : "Upgrade to Pro Yearly"}
-                    </button>
+                    isProMember ? (
+                      <button className="btn btn-secondary" disabled>
+                        Current Plan
+                      </button>
+                    ) : (
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => handleSelectPlan("pro_yearly")}
+                        disabled={loading !== null}
+                      >
+                        {loading === "pro_yearly" ? "Loading..." : "Upgrade to Pro Yearly"}
+                      </button>
+                    )
                   ) : (
                     <SignInButton mode="modal">
                       <button className="btn btn-primary">Get started</button>
