@@ -3,10 +3,10 @@ TECHPAD TODO LIST
 
 BEFROE LAUNCH
 ----------------------------
-[ ] Add payments integrated into the frontend (no need to redirect to Stripe)
-[ ] Real-time payment UI updates (polling after Stripe redirect)
-[ ] Subscription expiration checker (cron job to downgrade expired users)
-[ ] Block premium interviews for free users
+[-] Add payments integrated into the frontend (no need to redirect to Stripe)
+[-] Real-time payment UI updates (polling after Stripe redirect)
+[-] Subscription expiration checker (cron job to downgrade expired users)
+[-] Block premium interviews for free users
 [ ] Configure production webhooks in Clerk dashboard
 [ ] Configure production webhooks in Stripe dashboard
 [ ] Add error monitoring (Sentry or similar)

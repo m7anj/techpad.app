@@ -155,7 +155,21 @@ async function handleStripeWebhook(req, res) {
       }
 
 
+      case "checkout.session.expired": {
+        const session = event.data.object;
+        console.log("⏰ Checkout session expired:", session.id);
+        console.log("   Customer email:", session.customer_details?.email || "N/A");
+        console.log("   Session created:", new Date(session.created * 1000).toISOString());
+        console.log("   Session expired:", new Date(session.expires_at * 1000).toISOString());
 
+        // Log plan type if available
+        if (session.metadata?.plan_type) {
+          console.log("   Abandoned plan:", session.metadata.plan_type);
+        }
+
+        break;
+      }
+    
 
 
       case "customer.subscription.updated": {
