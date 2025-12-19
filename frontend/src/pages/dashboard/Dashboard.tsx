@@ -1,14 +1,16 @@
-import React from "react";
+import React, { use } from "react";
 import { useState, useEffect } from "react";
-import { useAuth } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import "../../styles/shared-layout.css";
 import "./Dashboard.css";
 import { Navbar } from "../../components/Navbar";
+import { UpgradeModal } from "../../components/UpgradeModal";
 import HERO_QUOTES from "./quotes";
 
 const Dashboard = () => {
   const { getToken } = useAuth();
+  const { user } = useUser();
   const navigate = useNavigate();
 
   const [presets, setPresets] = useState<any[]>([]);
@@ -18,6 +20,34 @@ const Dashboard = () => {
   const [heroQuote] = useState(
     () => HERO_QUOTES[Math.floor(Math.random() * HERO_QUOTES.length)],
   );
+  const [userSubscription, setUserSubscription] = useState<any>(null);
+  const [upgradeModal, setUpgradeModal] = useState<{ isOpen: boolean; reason: "premium" | "limit" | null }>({
+    isOpen: false,
+    reason: null,
+  });
+
+  // Fetch user subscription data from database
+  useEffect(() => {
+    const fetchUserSubscription = async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch("http://localhost:4000/user/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.ok) {
+          const userData = await res.json();
+          setUserSubscription(userData.subscription);
+        }
+      } catch (err) {
+        console.error("Error fetching user subscription:", err);
+      }
+    };
+
+    fetchUserSubscription();
+  }, [getToken]);
 
   useEffect(() => {
     const fetchPresets = async () => {
@@ -51,41 +81,73 @@ const Dashboard = () => {
     setSelectedInterview(preset);
   };
 
-  const closeModal = () => {
+  const closeInterviewModal = () => {
     setSelectedInterview(null);
   };
 
   const startInterview = async () => {
-    if (selectedInterview && !selectedInterview.premium) {
-      try {
-        // Create a secure interview session
-        const token = await getToken();
-        const response = await fetch(
-          "http://localhost:4000/interview-session/create",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ interviewId: selectedInterview.id }),
+    if (!selectedInterview) return;
+
+    // Check if user is trying to access premium interview
+    const isPremiumInterview = selectedInterview.premium;
+    const subscriptionPlan = user?.publicMetadata?.plan as string | undefined;
+    const subscriptionStatus = user?.publicMetadata?.subscriptionStatus as string | undefined;
+    const isProUser = subscriptionPlan?.includes('pro') && subscriptionStatus === 'active';
+
+    console.log("🔍 Interview Start Check:", {
+      selectedInterview: selectedInterview.id,
+      isPremiumInterview,
+      isProUser,
+      userSubscription,
+      interviewsAllowed: userSubscription?.interviewsAllowed,
+    });
+
+    // Block premium interviews for free users
+    if (isPremiumInterview && !isProUser) {
+      closeInterviewModal();
+      setUpgradeModal({ isOpen: true, reason: "premium" });
+      return;
+    }
+
+    // Check interview limit for free users
+    // Use ?? instead of || to allow 0 value
+    const interviewsAllowed = userSubscription?.interviewsAllowed ?? 3;
+    console.log("📊 Interviews allowed:", interviewsAllowed, "Is Pro:", isProUser);
+
+    if (interviewsAllowed <= 0 && !isProUser) {
+      closeInterviewModal();
+      setUpgradeModal({ isOpen: true, reason: "limit" });
+      return;
+    }
+
+    try {
+      // Create a secure interview session
+      const token = await getToken();
+      const response = await fetch(
+        "http://localhost:4000/interview-session/create",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-        );
+          body: JSON.stringify({ interviewId: selectedInterview.id }),
+        },
+      );
 
-        if (!response.ok) {
-          throw new Error("Failed to create interview session");
-        }
-
-        const { sessionToken } = await response.json();
-
-        // Navigate to interview with session token
-        navigate(`/interview/${sessionToken}`, {
-          state: { preset: selectedInterview },
-        });
-      } catch (error) {
-        console.error("Error starting interview:", error);
-        alert("Failed to start interview. Please try again.");
+      if (!response.ok) {
+        throw new Error("Failed to create interview session");
       }
+
+      const { sessionToken } = await response.json();
+
+      // Navigate to interview with session token
+      navigate(`/interview/${sessionToken}`, {
+        state: { preset: selectedInterview },
+      });
+    } catch (error) {
+      console.error("Error starting interview:", error);
+      alert("Failed to start interview. Please try again.");
     }
   };
 
@@ -332,9 +394,9 @@ const Dashboard = () => {
 
       {/* Interview Modal */}
       {selectedInterview && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay" onClick={closeInterviewModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={closeModal}>
+            <button className="modal-close" onClick={closeInterviewModal}>
               <svg
                 width="20"
                 height="20"
@@ -427,6 +489,13 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={upgradeModal.isOpen}
+        onClose={() => setUpgradeModal({ isOpen: false, reason: null })}
+        reason={upgradeModal.reason || "limit"}
+      />
     </div>
   );
 };

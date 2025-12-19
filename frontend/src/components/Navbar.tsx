@@ -13,11 +13,12 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
   const { getToken } = useAuth();
   const { user } = useUser();
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [interviewsLeft, setInterviewsLeft] = useState<number | null>(null);
 
   const isActive = (path: string) => location.pathname === path;
 
   useEffect(() => {
-    const fetchUserRole = async () => {
+    const fetchUserData = async () => {
       try {
         const token = await getToken();
         const response = await fetch("http://localhost:4000/user/me", {
@@ -28,13 +29,14 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
         if (response.ok) {
           const userData = await response.json();
           setUserRole(userData.role || "free");
+          setInterviewsLeft(userData.subscription?.interviewsAllowed ?? null);
         }
       } catch (error) {
-        console.error("Error fetching user role:", error);
+        console.error("Error fetching user data:", error);
       }
     };
 
-    fetchUserRole();
+    fetchUserData();
   }, [getToken]);
 
   // Get subscription plan from Clerk metadata
@@ -152,6 +154,24 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
                   <path d="M12 6v6l4 2" />
                 </svg>
                 Free
+              </span>
+            </div>
+          )}
+          {/* Show interview count for free users */}
+          {isFreeMember && interviewsLeft !== null && (
+            <div className="role-badge-container">
+              <span className="role-badge interviews">
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                {interviewsLeft} left
               </span>
             </div>
           )}

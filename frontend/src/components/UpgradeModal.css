@@ -1,0 +1,124 @@
+.upgrade-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.upgrade-modal {
+    background: var(--surface-glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 450px;
+    width: 90%;
+    box-shadow:
+        0 20px 60px -10px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.upgrade-modal-icon {
+    font-size: 3rem;
+    text-align: center;
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 2px 8px rgba(139, 92, 246, 0.3));
+}
+
+.upgrade-modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text);
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.02em;
+}
+
+.upgrade-modal-message {
+    font-size: 1rem;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.upgrade-modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.upgrade-modal-actions .btn {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+}
+
+.upgrade-modal-actions .btn-secondary {
+    background: rgba(100, 116, 139, 0.15);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
+
+.upgrade-modal-actions .btn-secondary:hover {
+    background: rgba(100, 116, 139, 0.25);
+    border-color: rgba(100, 116, 139, 0.4);
+}
+
+.upgrade-modal-actions .btn-primary {
+    background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+    color: white;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+.upgrade-modal-actions .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.5);
+}
+
+@media (max-width: 480px) {
+    .upgrade-modal {
+        padding: 1.5rem;
+    }
+
+    .upgrade-modal-actions {
+        flex-direction: column;
+    }
+
+    .upgrade-modal-actions .btn {
+        width: 100%;
+    }
+}

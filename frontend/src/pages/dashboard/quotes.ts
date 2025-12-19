@@ -93,7 +93,14 @@ const HERO_QUOTES = [
   "Pressure Makes Diamonds",
   "Assume Rumours To Be False",
   "Why Do You Doubt Yourself?",
-  "@wtrsp on Discord",
+  "What's Your Worst Nightmare?",
+  "What's Your Best Day Ever?",
+  "What's Your Best Night Ever?",
+  "What's Your Best Week Ever?",
+  "What's Your Best Month Ever?",
+  "Make This Your New Life",
+  "You Are The Best",
+  "Are You Ready For This?",
   "You Don't Need Friends",
 ];
 

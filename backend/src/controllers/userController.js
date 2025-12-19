@@ -1,5 +1,8 @@
 // userdata comes from clerk directly via req.auth
 import { clerkClient } from "@clerk/express";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 async function getUserByIdHandler(req, res) {
   // handle both old and new clerk api versions
@@ -15,7 +18,17 @@ async function getUserByIdHandler(req, res) {
     // fetch full user data from clerk to get metadata
     const clerkUser = await clerkClient.users.getUser(clerkUserId);
 
-    // return user info from clerk including subscription details
+    // fetch user from database to get interview count
+    const dbUser = await prisma.user.findUnique({
+      where: { clerkUserId },
+      select: {
+        numberOfInterviewsAllowed: true,
+        subscriptionStatus: true,
+        subscriptionEndsAt: true,
+      },
+    });
+
+    // return user info from clerk including subscription details from database
     const user = {
       clerkId: clerkUserId,
       email: clerkUser.emailAddresses?.[0]?.emailAddress,
@@ -24,9 +37,11 @@ async function getUserByIdHandler(req, res) {
       role: clerkUser.publicMetadata?.role || "free",
       subscription: {
         plan: clerkUser.publicMetadata?.plan || "free",
-        status: clerkUser.publicMetadata?.subscriptionStatus || "inactive",
+        status: dbUser?.subscriptionStatus || clerkUser.publicMetadata?.subscriptionStatus || "inactive",
         stripeCustomerId: clerkUser.publicMetadata?.stripeCustomerId,
         subscriptionId: clerkUser.publicMetadata?.subscriptionId,
+        interviewsAllowed: dbUser?.numberOfInterviewsAllowed ?? 3,
+        subscriptionEndsAt: dbUser?.subscriptionEndsAt,
       },
     };
 
