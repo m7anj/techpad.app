@@ -1,4 +1,3 @@
-import React, { use } from "react";
 import { useState, useEffect } from "react";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
@@ -21,7 +20,10 @@ const Dashboard = () => {
     () => HERO_QUOTES[Math.floor(Math.random() * HERO_QUOTES.length)],
   );
   const [userSubscription, setUserSubscription] = useState<any>(null);
-  const [upgradeModal, setUpgradeModal] = useState<{ isOpen: boolean; reason: "premium" | "limit" | null }>({
+  const [upgradeModal, setUpgradeModal] = useState<{
+    isOpen: boolean;
+    reason: "premium" | "limit" | null;
+  }>({
     isOpen: false,
     reason: null,
   });
@@ -91,8 +93,11 @@ const Dashboard = () => {
     // Check if user is trying to access premium interview
     const isPremiumInterview = selectedInterview.premium;
     const subscriptionPlan = user?.publicMetadata?.plan as string | undefined;
-    const subscriptionStatus = user?.publicMetadata?.subscriptionStatus as string | undefined;
-    const isProUser = subscriptionPlan?.includes('pro') && subscriptionStatus === 'active';
+    const subscriptionStatus = user?.publicMetadata?.subscriptionStatus as
+      | string
+      | undefined;
+    const isProUser =
+      subscriptionPlan?.includes("pro") && subscriptionStatus === "active";
 
     console.log("🔍 Interview Start Check:", {
       selectedInterview: selectedInterview.id,
@@ -112,7 +117,12 @@ const Dashboard = () => {
     // Check interview limit for free users
     // Use ?? instead of || to allow 0 value
     const interviewsAllowed = userSubscription?.interviewsAllowed ?? 3;
-    console.log("📊 Interviews allowed:", interviewsAllowed, "Is Pro:", isProUser);
+    console.log(
+      "📊 Interviews allowed:",
+      interviewsAllowed,
+      "Is Pro:",
+      isProUser,
+    );
 
     if (interviewsAllowed <= 0 && !isProUser) {
       closeInterviewModal();
@@ -273,9 +283,6 @@ const Dashboard = () => {
                       onClick={() => openInterviewModal(preset)}
                     >
                       <div className="row-left">
-                        <div className="td-status">
-                          <div className="status-dot"></div>
-                        </div>
                         <div className="td-number">{preset.id}.</div>
                         <div className="td-title-group">
                           <span className="problem-title">{preset.type}</span>

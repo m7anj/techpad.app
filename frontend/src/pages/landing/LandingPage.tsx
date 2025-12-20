@@ -2,13 +2,19 @@ import { SignInButton, SignUpButton } from "@clerk/clerk-react";
 import Logo from "../../components/Logo";
 import "./LandingPage.css";
 import "./animated.css";
+import icon from "../../icons/logo-text.png";
 
 const LandingPage = () => {
   return (
     <div className="landing">
       <header className="header">
         <div className="container">
-          <Logo size="medium" variant="default" className="animate-fade-in" />
+          <Logo
+            size="medium"
+            variant="default"
+            showText={true}
+            className="animate-fade-in"
+          />
         </div>
       </header>
       <main className="main">

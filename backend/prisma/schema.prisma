@@ -31,7 +31,6 @@ model completedInterview {
   completedAt DateTime  @default(now())
   clerkUserId String
   feedback    Json?
-  messages    Message[]
   interview   Interview @relation(fields: [interviewId], references: [id])
 
   @@index([clerkUserId])
@@ -48,15 +47,6 @@ model Interview {
   premium             Boolean              @default(false)
   tags                String[]             @default([])
   completedInterviews completedInterview[]
-}
-
-model Message {
-  id                   String             @id @default(uuid())
-  completedInterviewId String
-  content              String
-  sequence             Int
-  role                 String
-  completedInterview   completedInterview @relation(fields: [completedInterviewId], references: [id])
 }
 
 model InterviewSession {

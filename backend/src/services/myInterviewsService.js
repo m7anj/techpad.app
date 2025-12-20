@@ -23,14 +23,6 @@ async function getCompletedInterviewsByUserId(clerkUserId) {
           tags: true,
         },
       },
-      messages: {
-        select: {
-          id: true,
-          content: true,
-          sequence: true,
-          role: true,
-        },
-      },
     },
     orderBy: {
       completedAt: "desc",
@@ -49,32 +41,6 @@ async function addCompletedInterview(
   feedback,
 ) {
   try {
-    // Create messages array with proper structure
-    const messages = [];
-
-    if (questionAnswers && Array.isArray(questionAnswers)) {
-      questionAnswers.forEach((qa, index) => {
-        // Add question (if exists)
-        if (qa.question) {
-          messages.push({
-            content: qa.question,
-            sequence: index * 2,
-            role: "assistant",
-          });
-        }
-
-        // Add answer - support both old format (qa.answer) and new format (qa.content)
-        const answerContent = qa.answer || qa.content || "";
-        if (answerContent) {
-          messages.push({
-            content: answerContent,
-            sequence: index * 2 + 1,
-            role: "user",
-          });
-        }
-      });
-    }
-
     const completedInterview = await prisma.completedInterview.create({
       data: {
         clerkUserId,
@@ -82,16 +48,10 @@ async function addCompletedInterview(
         timeTaken: timeTaken || 0,
         score,
         feedback,
-        messages: {
-          create: messages,
-        },
-      },
-      include: {
-        messages: true,
       },
     });
 
-    console.log(`✅ Saved interview with ${messages.length} messages`);
+    console.log(`✅ Saved completed interview`);
     return completedInterview;
   } catch (error) {
     console.error("Error in addCompletedInterview:", error);

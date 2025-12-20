@@ -370,9 +370,9 @@
 }
 
 .td-number {
-    font-size: 0.9375rem;
-    font-weight: 500;
-    color: var(--text);
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-muted);
     min-width: 28px;
 }
 
