@@ -204,6 +204,14 @@ const Dashboard = () => {
     );
   });
 
+  // Check if user is pro
+  const subscriptionPlan = user?.publicMetadata?.plan as string | undefined;
+  const subscriptionStatus = user?.publicMetadata?.subscriptionStatus as
+    | string
+    | undefined;
+  const isProUser =
+    subscriptionPlan?.includes("pro") && subscriptionStatus === "active";
+
   return (
     <div className="dashboard page-wrapper">
       <Navbar />
@@ -279,7 +287,7 @@ const Dashboard = () => {
                   filteredPresets.map((preset) => (
                     <div
                       key={preset.id}
-                      className={`problem-row ${preset.premium ? "premium-locked" : ""}`}
+                      className={`problem-row ${preset.premium && !isProUser ? "premium-locked" : ""}`}
                       onClick={() => openInterviewModal(preset)}
                     >
                       <div className="row-left">
@@ -318,7 +326,7 @@ const Dashboard = () => {
                           </span>
                         </div>
                         <div className="td-lock">
-                          {preset.premium ? (
+                          {preset.premium && !isProUser ? (
                             <svg
                               width="16"
                               height="16"
@@ -337,26 +345,7 @@ const Dashboard = () => {
                               />
                               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                             </svg>
-                          ) : (
-                            <svg
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                            >
-                              <rect
-                                x="3"
-                                y="11"
-                                width="18"
-                                height="11"
-                                rx="2"
-                                ry="2"
-                              />
-                              <path d="M7 11V7a5 5 0 0 1 9.9 0M7 11v4" />
-                            </svg>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     </div>
@@ -461,20 +450,47 @@ const Dashboard = () => {
             )}
 
             <div className="modal-actions">
-              <button className="btn-start" onClick={startInterview}>
-                Start Interview
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
+              {selectedInterview.premium &&
+              !(user?.publicMetadata?.plan as string | undefined)?.includes(
+                "pro",
+              ) ? (
+                <button
+                  className="btn-start locked"
+                  disabled
+                  onClick={() => {
+                    closeInterviewModal();
+                    setUpgradeModal({ isOpen: true, reason: "premium" });
+                  }}
                 >
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                  <polyline points="12 5 19 12 12 19" />
-                </svg>
-              </button>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                  Upgrade to Premium
+                </button>
+              ) : (
+                <button className="btn-start" onClick={startInterview}>
+                  Start Interview
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                    <polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         </div>
