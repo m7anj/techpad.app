@@ -10,7 +10,7 @@ const Interview = () => {
   const { id: sessionToken } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const preset = location.state?.preset;
+  // const preset = location.state?.preset;
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 

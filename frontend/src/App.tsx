@@ -1,4 +1,4 @@
-import React from "react";
+// import React from "react";
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/dashboard/Dashboard";

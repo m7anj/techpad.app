@@ -11,7 +11,16 @@ interface Interview {
   completedAt: Date;
   duration: number;
   score?: number;
-  feedback?: string;
+  feedback?: {
+    breakdown?: {
+      technical: number;
+      problemSolving: number;
+      communication: number;
+    };
+    strengths?: string[];
+    gaps?: string[];
+    improvement?: string[];
+  };
 }
 
 const MyInterviews = () => {
@@ -182,7 +191,7 @@ const MyInterviews = () => {
             ) : (
               <div className="problems-table">
                 {sortedInterviews && sortedInterviews.length > 0 ? (
-                  sortedInterviews.map((interview, index) => {
+                  sortedInterviews.map((interview) => {
                     const scoreStyle = interview.score
                       ? getScoreBackground(interview.score)
                       : {};

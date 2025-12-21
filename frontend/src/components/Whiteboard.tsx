@@ -15,21 +15,30 @@ interface WhiteboardProps {
 
 export interface WhiteboardRef {
   getCanvas: () => HTMLCanvasElement | null;
+  clear: () => void;
 }
 
 export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
   ({ onChange, isActive }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-
-    useImperativeHandle(ref, () => ({
-      getCanvas: () => canvasRef.current,
-    }));
     const containerRef = useRef<HTMLDivElement>(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [lines, setLines] = useState<any[]>([]);
     const [currentLine, setCurrentLine] = useState<any[]>([]);
     const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
     const [history, setHistory] = useState<any[][]>([]);
+
+    const clearCanvas = () => {
+      setHistory([...history, lines]);
+      setLines([]);
+      setCurrentLine([]);
+      onChange?.([]);
+    };
+
+    useImperativeHandle(ref, () => ({
+      getCanvas: () => canvasRef.current,
+      clear: clearCanvas,
+    }));
 
     // Set canvas size on mount and when container becomes visible
     useEffect(() => {
@@ -126,7 +135,8 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
       if (!canvas) return [0, 0];
 
       const rect = canvas.getBoundingClientRect();
-      return [e.clientX - rect.left, e.clientY - rect.top, e.pressure || 0.5];
+      // Use default pressure value for mouse events (touch events would have pressure)
+      return [e.clientX - rect.left, e.clientY - rect.top, 0.5];
     };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -150,13 +160,6 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
         setCurrentLine([]);
         onChange?.(newLines);
       }
-    };
-
-    const clearCanvas = () => {
-      setHistory([...history, lines]);
-      setLines([]);
-      setCurrentLine([]);
-      onChange?.([]);
     };
 
     const undo = () => {
