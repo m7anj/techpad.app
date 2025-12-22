@@ -176,9 +176,21 @@ const Dashboard = () => {
     if (tagLower.includes("network")) return "tag-networking";
     if (tagLower.includes("system design") || tagLower.includes("cloud"))
       return "tag-system-design";
-    if (tagLower.includes("os") || tagLower.includes("operating"))
+    if (
+      tagLower.includes("os") ||
+      tagLower.includes("operating") ||
+      tagLower.includes("kernel") ||
+      tagLower.includes("file") ||
+      tagLower.includes("schedul") ||
+      tagLower.includes("syste") ||
+      tagLower.includes("concurrency")
+    )
       return "tag-os";
-    if (tagLower.includes("devops") || tagLower.includes("admin"))
+    if (
+      tagLower.includes("devops") ||
+      tagLower.includes("admin") ||
+      tagLower.includes("it")
+    )
       return "tag-devops";
     if (tagLower.includes("web")) return "tag-web";
     if (
@@ -187,6 +199,13 @@ const Dashboard = () => {
       tagLower.includes("dsa")
     )
       return "tag-dsa";
+    if (
+      tagLower.includes("machine learning") ||
+      tagLower.includes("ml") ||
+      tagLower.includes("ai") ||
+      tagLower.includes("artificial intelligence")
+    )
+      return "tag-ml";
 
     // Default
     return "tag-default";
