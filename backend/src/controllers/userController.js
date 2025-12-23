@@ -17,31 +17,35 @@ async function getUserByIdHandler(req, res) {
     // fetch full user data from clerk to get metadata
     const clerkUser = await clerkClient.users.getUser(clerkUserId);
 
-    // fetch user from database to get interview count
+    // fetch user from database to get subscription details
     const dbUser = await prisma.user.findUnique({
       where: { clerkUserId },
       select: {
         numberOfInterviewsAllowed: true,
         subscriptionStatus: true,
         subscriptionEndsAt: true,
+        stripeCustomerId: true,
+        stripeSubscriptionId: true,
       },
     });
 
-    // return user info from clerk including subscription details from database
+    // Determine plan based on subscription status from database
+    const isPro = dbUser?.subscriptionStatus === "active";
+    const plan = isPro ? "pro_monthly" : "free";
+    const role = isPro ? "pro" : "free";
+
+    // return user info - ALL subscription data comes from database
     const user = {
       clerkId: clerkUserId,
       email: clerkUser.emailAddresses?.[0]?.emailAddress,
       username: clerkUser.username,
       imageUrl: clerkUser.imageUrl,
-      role: clerkUser.publicMetadata?.role || "free",
+      role: role,
       subscription: {
-        plan: clerkUser.publicMetadata?.plan || "free",
-        status:
-          dbUser?.subscriptionStatus ||
-          clerkUser.publicMetadata?.subscriptionStatus ||
-          "inactive",
-        stripeCustomerId: clerkUser.publicMetadata?.stripeCustomerId,
-        subscriptionId: clerkUser.publicMetadata?.subscriptionId,
+        plan: plan,
+        status: dbUser?.subscriptionStatus || "inactive",
+        stripeCustomerId: dbUser?.stripeCustomerId,
+        subscriptionId: dbUser?.stripeSubscriptionId,
         interviewsAllowed: dbUser?.numberOfInterviewsAllowed ?? 3,
         subscriptionEndsAt: dbUser?.subscriptionEndsAt,
       },

@@ -109,6 +109,30 @@ async function handleClerkWebhook(req, res) {
       }
     }
 
+    if (type === "user.updated") {
+      console.log(`🔄 User updated in Clerk: ${data.id}`);
+
+      // Check if username was updated
+      const username = data.username || null;
+
+      try {
+        // Update username in database
+        await prisma.user.update({
+          where: { clerkUserId: data.id },
+          data: { username: username },
+        });
+
+        console.log(`✅ Updated username in database:`, {
+          clerkUserId: data.id,
+          username: username,
+        });
+      } catch (dbError) {
+        console.error("❌ Error updating username in database:", dbError);
+      }
+
+      return res.status(200).json({ success: true });
+    }
+
     // For other event types, just acknowledge receipt
     res.status(200).json({ success: true });
   } catch (error) {

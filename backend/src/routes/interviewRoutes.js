@@ -271,7 +271,19 @@ export default function setupWebSocketRoutes(app) {
                   }),
                 );
               } else {
-                ws.send(JSON.stringify({ type: "interviewComplete" }));
+                // Interview is complete - save it and send result
+                const result = await closeInterview(
+                  interviewId,
+                  session,
+                  clerkUserId,
+                );
+                const resultId = result?.id || null;
+                ws.send(
+                  JSON.stringify({
+                    type: "interviewComplete",
+                    resultId: resultId,
+                  }),
+                );
               }
               return;
             }
@@ -313,7 +325,19 @@ export default function setupWebSocketRoutes(app) {
                   }),
                 );
               } else {
-                ws.send(JSON.stringify({ type: "interviewComplete" }));
+                // Interview is complete - save it and send result
+                const result = await closeInterview(
+                  interviewId,
+                  session,
+                  clerkUserId,
+                );
+                const resultId = result?.id || null;
+                ws.send(
+                  JSON.stringify({
+                    type: "interviewComplete",
+                    resultId: resultId,
+                  }),
+                );
               }
             } else {
               session.followupQuestions.push(followup.followup);

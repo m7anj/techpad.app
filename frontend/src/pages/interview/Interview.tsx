@@ -199,9 +199,13 @@ const Interview = () => {
         setIsFollowup(false);
         setIsWaitingForResponse(false);
 
-        // Navigate to results after a short delay
+        // Navigate to results page with the result ID
         setTimeout(() => {
-          navigate("/my-interviews");
+          if (data.resultId) {
+            navigate(`/results/${data.resultId}`);
+          } else {
+            navigate("/dashboard");
+          }
         }, 2000);
       }
     };

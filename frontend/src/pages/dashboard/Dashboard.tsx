@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
+import { useCache } from "../../contexts/CacheContext";
 import "../../styles/shared-layout.css";
 import "./Dashboard.css";
 import { Navbar } from "../../components/Navbar";
@@ -20,6 +21,7 @@ const Dashboard = () => {
     () => HERO_QUOTES[Math.floor(Math.random() * HERO_QUOTES.length)],
   );
   const [userSubscription, setUserSubscription] = useState<any>(null);
+  const [hasFetchedPresets, setHasFetchedPresets] = useState(false);
   const [upgradeModal, setUpgradeModal] = useState<{
     isOpen: boolean;
     reason: "premium" | "limit" | null;
@@ -27,10 +29,22 @@ const Dashboard = () => {
     isOpen: false,
     reason: null,
   });
+  const { getCache, setCache } = useCache();
+  const [hasFetchedUser, setHasFetchedUser] = useState(false);
 
-  // Fetch user subscription data from database
+  // Fetch user subscription data from database with caching
   useEffect(() => {
+    if (!user || hasFetchedUser) return;
+
     const fetchUserSubscription = async () => {
+      // Check cache first
+      const cachedData = getCache<any>("userData");
+      if (cachedData) {
+        setUserSubscription(cachedData.subscription);
+        setHasFetchedUser(true);
+        return;
+      }
+
       try {
         const token = await getToken();
         const res = await fetch("http://localhost:4000/user/me", {
@@ -42,6 +56,9 @@ const Dashboard = () => {
         if (res.ok) {
           const userData = await res.json();
           setUserSubscription(userData.subscription);
+          // Cache the user data
+          setCache("userData", userData);
+          setHasFetchedUser(true);
         }
       } catch (err) {
         console.error("Error fetching user subscription:", err);
@@ -49,10 +66,21 @@ const Dashboard = () => {
     };
 
     fetchUserSubscription();
-  }, [getToken]);
+  }, [user]);
 
   useEffect(() => {
+    if (!user || hasFetchedPresets) return;
+
     const fetchPresets = async () => {
+      // Check cache first
+      const cachedPresets = getCache<any[]>("presets");
+      if (cachedPresets) {
+        setPresets(cachedPresets);
+        setLoading(false);
+        setHasFetchedPresets(true);
+        return;
+      }
+
       try {
         setLoading(true);
         const token = await getToken();
@@ -69,6 +97,9 @@ const Dashboard = () => {
 
         const res_json = await res.json();
         setPresets(res_json);
+        // Cache presets data
+        setCache("presets", res_json);
+        setHasFetchedPresets(true);
       } catch (err) {
         console.log(err);
       } finally {
@@ -77,7 +108,7 @@ const Dashboard = () => {
     };
 
     fetchPresets();
-  }, [getToken]);
+  }, [user]);
 
   const openInterviewModal = (preset: any) => {
     setSelectedInterview(preset);
@@ -92,12 +123,10 @@ const Dashboard = () => {
 
     // Check if user is trying to access premium interview
     const isPremiumInterview = selectedInterview.premium;
-    const subscriptionPlan = user?.publicMetadata?.plan as string | undefined;
-    const subscriptionStatus = user?.publicMetadata?.subscriptionStatus as
-      | string
-      | undefined;
+    // Check subscription status from database instead of Clerk
     const isProUser =
-      subscriptionPlan?.includes("pro") && subscriptionStatus === "active";
+      userSubscription?.status === "active" &&
+      userSubscription?.plan?.includes("pro");
 
     console.log("🔍 Interview Start Check:", {
       selectedInterview: selectedInterview.id,
@@ -223,13 +252,10 @@ const Dashboard = () => {
     );
   });
 
-  // Check if user is pro
-  const subscriptionPlan = user?.publicMetadata?.plan as string | undefined;
-  const subscriptionStatus = user?.publicMetadata?.subscriptionStatus as
-    | string
-    | undefined;
+  // Check if user is pro - use database data instead of Clerk metadata
   const isProUser =
-    subscriptionPlan?.includes("pro") && subscriptionStatus === "active";
+    userSubscription?.status === "active" &&
+    userSubscription?.plan?.includes("pro");
 
   return (
     <div className="dashboard page-wrapper">

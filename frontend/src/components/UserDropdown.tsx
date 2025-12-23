@@ -103,13 +103,13 @@ export const UserDropdown = () => {
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
               <circle cx="12" cy="7" r="4" />
             </svg>
-            View Profile
+            My Profile
           </button>
 
           <button
             className="user-dropdown-item"
             onClick={() => {
-              navigate("/my-interviews");
+              navigate("/leaderboard");
               setIsOpen(false);
             }}
           >
@@ -121,9 +121,12 @@ export const UserDropdown = () => {
               stroke="currentColor"
               strokeWidth="2"
             >
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              <path d="M16 16v-3a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3" />
+              <rect x="2" y="8" width="4" height="12" rx="1" />
+              <rect x="10" y="4" width="4" height="16" rx="1" />
+              <rect x="18" y="12" width="4" height="8" rx="1" />
             </svg>
-            My Interviews
+            Leaderboard
           </button>
 
           <button
