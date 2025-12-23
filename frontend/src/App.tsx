@@ -7,6 +7,7 @@ import Interview from "./pages/interview/Interview";
 import Payment from "./pages/payment/Payment";
 import PaymentSuccess from "./pages/payment/PaymentSuccess";
 import MyInterviews from "./pages/myInterviews/MyInterviews";
+import UserProfile from "./pages/profile/UserProfile";
 import "./styles/globals.css";
 import "./styles/components/clerk.css";
 function App() {
@@ -28,6 +29,7 @@ function App() {
           <Route path="/my-interviews" element={<MyInterviews />} />
           <Route path="/pricing" element={<Payment />} />
           <Route path="/payment/success" element={<PaymentSuccess />} />
+          <Route path="/u/:username" element={<UserProfile />} />
         </Routes>
       </SignedIn>
     </div>
