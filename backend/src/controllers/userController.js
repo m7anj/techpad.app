@@ -13,7 +13,6 @@ async function getUserByIdHandler(req, res) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-
   try {
     // fetch full user data from clerk to get metadata
     const clerkUser = await clerkClient.users.getUser(clerkUserId);
@@ -37,7 +36,10 @@ async function getUserByIdHandler(req, res) {
       role: clerkUser.publicMetadata?.role || "free",
       subscription: {
         plan: clerkUser.publicMetadata?.plan || "free",
-        status: dbUser?.subscriptionStatus || clerkUser.publicMetadata?.subscriptionStatus || "inactive",
+        status:
+          dbUser?.subscriptionStatus ||
+          clerkUser.publicMetadata?.subscriptionStatus ||
+          "inactive",
         stripeCustomerId: clerkUser.publicMetadata?.stripeCustomerId,
         subscriptionId: clerkUser.publicMetadata?.subscriptionId,
         interviewsAllowed: dbUser?.numberOfInterviewsAllowed ?? 3,
@@ -46,11 +48,95 @@ async function getUserByIdHandler(req, res) {
     };
 
     res.status(200).json(user);
-
   } catch (error) {
     console.error("Error in getUserByIdHandler:", error);
     res.status(500).json({ message: "Error" });
   }
 }
 
-export { getUserByIdHandler };
+// for public use
+async function getUserByUsernameHandler(req, res) {
+  const { username } = req.params;
+
+  if (!username) {
+    return res.status(400).json({ message: "Username is required" });
+  }
+
+  try {
+    // Fetch user from database by username
+    const dbUser = await prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        clerkUserId: true,
+        username: true,
+        email: true,
+        elo: true,
+        numberOfInterviewsAllowed: true,
+        subscriptionStatus: true,
+        createdAt: true,
+      },
+    });
+
+    if (!dbUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const completedInterviews = await prisma.completedInterview.findMany({
+      where: { clerkUserId: dbUser.clerkUserId },
+      select: {
+        id: true,
+        score: true,
+        timeTaken: true,
+        completedAt: true,
+        interview: {
+          select: {
+            type: true,
+            topic: true,
+            difficulty: true,
+          },
+        },
+      },
+      orderBy: { completedAt: "desc" },
+    });
+
+    // Fetch profile picture from Clerk
+    let imageUrl = null;
+    try {
+      const clerkUser = await clerkClient.users.getUser(dbUser.clerkUserId);
+      imageUrl = clerkUser.imageUrl;
+    } catch (clerkError) {
+      console.error("Error fetching Clerk user data:", clerkError);
+    }
+
+    // Build user profile response
+    const userProfile = {
+      username: dbUser.username,
+      email: dbUser.email,
+      imageUrl: imageUrl,
+      elo: dbUser.elo,
+      subscriptionStatus: dbUser.subscriptionStatus,
+      memberSince: dbUser.createdAt,
+      stats: {
+        totalInterviews: completedInterviews.length,
+        averageScore:
+          completedInterviews.length > 0
+            ? (
+                completedInterviews.reduce(
+                  (sum, interview) => sum + (interview.score || 0),
+                  0,
+                ) / completedInterviews.length
+              ).toFixed(2)
+            : 0,
+        interviewsCompleted: completedInterviews,
+      },
+    };
+
+    res.status(200).json(userProfile);
+  } catch (error) {
+    console.error("Error in getUserByUsernameHandler:", error);
+    res.status(500).json({ message: "Error fetching user profile" });
+  }
+}
+
+export { getUserByIdHandler, getUserByUsernameHandler };

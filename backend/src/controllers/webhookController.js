@@ -70,12 +70,14 @@ async function handleClerkWebhook(req, res) {
 
       // Create user in database
       const email = data.email_addresses?.[0]?.email_address;
+      const username = data.username || null;
 
       try {
         const user = await prisma.user.create({
           data: {
             clerkUserId: data.id,
             email: email,
+            username: username,
             numberOfInterviewsAllowed: 3, // Default free tier
           },
         });
@@ -84,6 +86,7 @@ async function handleClerkWebhook(req, res) {
           id: user.id,
           clerkUserId: user.clerkUserId,
           email: user.email,
+          username: user.username,
           numberOfInterviewsAllowed: user.numberOfInterviewsAllowed,
         });
 
@@ -94,14 +97,14 @@ async function handleClerkWebhook(req, res) {
             id: user.id,
             clerkUserId: user.clerkUserId,
             numberOfInterviewsAllowed: user.numberOfInterviewsAllowed,
-          }
+          },
         });
       } catch (dbError) {
         console.error("❌ Error creating user in database:", dbError);
         // Still return success to Clerk so it doesn't retry
         return res.status(200).json({
           success: true,
-          message: "User registered in Clerk (database error logged)"
+          message: "User registered in Clerk (database error logged)",
         });
       }
     }
