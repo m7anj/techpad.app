@@ -1,8 +1,9 @@
-import { setupInterview, createInterviewSession } from "../services/interviewService.js";
+import {
+  setupInterview,
+  createInterviewSession,
+} from "../services/interviewService.js";
 import { getExplorePresetById } from "../services/exploreService.js";
 import { canAccessPremium } from "../middleware/auth.js";
-
-
 
 // HANDLER TO START INTERVIEW SESSION
 async function getInterviewQuestionsHandler(req, res) {
@@ -16,8 +17,6 @@ async function getInterviewQuestionsHandler(req, res) {
   }
   return questions;
 }
-
-
 
 // HANDLER TO CREATE AN INTERVIEW SESSION
 async function createInterviewSessionHandler(req, res) {
@@ -40,11 +39,15 @@ async function createInterviewSessionHandler(req, res) {
       return res.status(404).json({ error: "Interview not found" });
     }
 
-    if (interview.premium && !canAccessPremium(req)) {
-      return res.status(403).json({
-        error: "Premium subscription required",
-        message: "This interview requires a premium subscription",
-      });
+    // Check if interview is premium-only and user has access
+    if (interview.premium) {
+      const hasAccess = await canAccessPremium(req);
+      if (!hasAccess) {
+        return res.status(403).json({
+          error: "Premium subscription required",
+          message: "This interview requires a premium subscription",
+        });
+      }
     }
 
     const session = await createInterviewSession(clerkUserId, interviewId);

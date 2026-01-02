@@ -29,12 +29,42 @@ function requireRole(...allowedRoles) {
 }
 
 // check if user can access premium content
-function canAccessPremium(req) {
-  const role = getUserRole(req);
-  return ["owner", "admin", "premium"].includes(role);
+// This should check the database for active subscription status
+async function canAccessPremium(req) {
+  const auth = typeof req.auth === "function" ? req.auth() : req.auth;
+  const clerkUserId = auth?.userId;
+
+  if (!clerkUserId) {
+    return false;
+  }
+
+  // Import prisma here to avoid circular dependency
+  const { PrismaClient } = await import("@prisma/client");
+  const prisma = new PrismaClient();
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { clerkUserId },
+      select: {
+        subscriptionStatus: true,
+      },
+    });
+
+    await prisma.$disconnect();
+
+    // User has premium access if they have an active subscription
+    // or if they have owner/admin role
+    const role = getUserRole(req);
+    const hasAdminRole = ["owner", "admin"].includes(role);
+    const hasActiveSubscription = user?.subscriptionStatus === "active";
+
+    return hasAdminRole || hasActiveSubscription;
+  } catch (error) {
+    console.error("Error checking premium access:", error);
+    await prisma.$disconnect();
+    return false;
+  }
 }
-
-
 
 // check if user is admin or owner
 function isAdmin(req) {
@@ -42,14 +72,10 @@ function isAdmin(req) {
   return ["owner", "admin"].includes(role);
 }
 
-
-
 // check if user is owner
 function isOwner(req) {
   const role = getUserRole(req);
   return role === "owner";
 }
-
-
 
 export { getUserRole, requireRole, canAccessPremium, isAdmin, isOwner };

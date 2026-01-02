@@ -1,7 +1,9 @@
-import { UserButton, useAuth, useUser } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Logo from "./Logo";
+import { UserDropdown } from "./UserDropdown";
+import { useCache } from "../contexts/CacheContext";
 import "./Navbar.css";
 
 interface NavbarProps {
@@ -12,13 +14,41 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
   const location = useLocation();
   const { getToken } = useAuth();
   const { user } = useUser();
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [interviewsLeft, setInterviewsLeft] = useState<number | null>(null);
+  const { getCache, setCache } = useCache();
+
+  // Initialize state from cache immediately
+  const initialCache = getCache<any>("userData");
+  const [userRole, setUserRole] = useState<string | null>(
+    initialCache?.role || null,
+  );
+  const [interviewsLeft, setInterviewsLeft] = useState<number | null>(
+    initialCache?.subscription?.interviewsAllowed ?? null,
+  );
+  const [subscriptionPlan, setSubscriptionPlan] = useState<string | null>(
+    initialCache?.subscription?.plan || null,
+  );
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(
+    initialCache?.subscription?.status || null,
+  );
+  const [hasFetched, setHasFetched] = useState(!!initialCache);
 
   const isActive = (path: string) => location.pathname === path;
 
   useEffect(() => {
+    if (!user || hasFetched) return;
+
     const fetchUserData = async () => {
+      // Check cache first
+      const cachedData = getCache<any>("userData");
+      if (cachedData) {
+        setUserRole(cachedData.role || "free");
+        setInterviewsLeft(cachedData.subscription?.interviewsAllowed ?? null);
+        setSubscriptionPlan(cachedData.subscription?.plan || "free");
+        setSubscriptionStatus(cachedData.subscription?.status || "inactive");
+        setHasFetched(true);
+        return;
+      }
+
       try {
         const token = await getToken();
         const response = await fetch("http://localhost:4000/user/me", {
@@ -28,28 +58,33 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
         });
         if (response.ok) {
           const userData = await response.json();
+
+          // Update all state atomically
           setUserRole(userData.role || "free");
           setInterviewsLeft(userData.subscription?.interviewsAllowed ?? null);
+          setSubscriptionPlan(userData.subscription?.plan || "free");
+          setSubscriptionStatus(userData.subscription?.status || "inactive");
+
+          // Cache the data
+          setCache("userData", userData);
+          setHasFetched(true);
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
       }
     };
 
-    if (user) {
-      fetchUserData();
-    }
-  }, [getToken, user]);
+    fetchUserData();
+  }, [user]); // Only depend on user, not getToken or other changing values
 
-  // Get subscription plan from Clerk metadata
-  const subscriptionPlan = user?.publicMetadata?.plan as string | undefined;
-  const subscriptionStatus = user?.publicMetadata?.subscriptionStatus as string | undefined;
-  const isProMember = subscriptionPlan && (subscriptionPlan.includes('pro')) && subscriptionStatus === 'active';
+  // Check subscription status from database instead of Clerk metadata
+  const isProMember =
+    subscriptionPlan &&
+    subscriptionPlan.includes("pro") &&
+    subscriptionStatus === "active";
   const isFreeMember = !isProMember;
 
-  // Get interviewsAllowed from Clerk metadata to avoid flashing
-  const interviewsAllowedFromMetadata = user?.publicMetadata?.interviewsAllowed as number | undefined;
-  const displayInterviewsLeft = interviewsLeft ?? interviewsAllowedFromMetadata ?? null;
+  const displayInterviewsLeft = interviewsLeft;
 
   const handleLinkClick = (
     e: React.MouseEvent<HTMLAnchorElement>,
@@ -90,9 +125,9 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
               <span>Dashboard</span>
             </Link>
             <Link
-              to="/my-interviews"
-              className={`nav-link ${isActive("/my-interviews") ? "active" : ""}`}
-              onClick={(e) => handleLinkClick(e, "/my-interviews")}
+              to="/leaderboard"
+              className={`nav-link ${isActive("/leaderboard") ? "active" : ""}`}
+              onClick={(e) => handleLinkClick(e, "/leaderboard")}
             >
               <svg
                 width="18"
@@ -102,9 +137,32 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
                 stroke="currentColor"
                 strokeWidth="2"
               >
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                <path d="M16 16v-3a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3" />
+                <rect x="2" y="8" width="4" height="12" rx="1" />
+                <rect x="10" y="4" width="4" height="16" rx="1" />
+                <rect x="18" y="12" width="4" height="8" rx="1" />
               </svg>
-              <span>My Interviews</span>
+              <span>Leaderboard</span>
+            </Link>
+            <Link
+              to={user?.username ? `/u/${user.username}` : "#"}
+              className={`nav-link ${location.pathname.startsWith("/u/") ? "active" : ""}`}
+              onClick={(e) =>
+                handleLinkClick(e, user?.username ? `/u/${user.username}` : "#")
+              }
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span>Me</span>
             </Link>
             <Link
               to="/pricing"
@@ -123,6 +181,41 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
                 <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
               </svg>
               <span>Pricing</span>
+            </Link>
+            <Link
+              to="/contribution"
+              className={`nav-link ${isActive("/contribution") ? "active" : ""}`}
+              onClick={(e) => handleLinkClick(e, "/contribution")}
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 5v14" />
+                <path d="M5 12h14" />
+              </svg>
+              <span>Contribute</span>
+            </Link>
+            <Link
+              to="/feedback"
+              className={`nav-link ${isActive("/feedback") ? "active" : ""}`}
+              onClick={(e) => handleLinkClick(e, "/feedback")}
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+              </svg>
+              <span>Feedback</span>
             </Link>
           </div>
         </div>
@@ -216,7 +309,7 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
               )}
             </div>
           )}
-          <UserButton afterSignOutUrl="/" />
+          <UserDropdown />
         </div>
       </div>
     </nav>

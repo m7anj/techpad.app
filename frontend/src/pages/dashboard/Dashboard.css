@@ -370,9 +370,9 @@
 }
 
 .td-number {
-    font-size: 0.9375rem;
-    font-weight: 500;
-    color: var(--text);
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-muted);
     min-width: 28px;
 }
 
@@ -482,13 +482,19 @@
     border: 1px solid rgba(74, 144, 226, 0.2);
 }
 
+.tag-ml {
+    background: rgba(255, 87, 34, 0.15);
+    color: #ff9999;
+    border: 1px solid rgba(255, 87, 34, 0.25);
+}
+
 .tag-default {
     background: rgba(158, 158, 158, 0.12);
     color: #9e9e9e;
     border: 1px solid rgba(158, 158, 158, 0.2);
 }
 
-.tag-more {
+. .tag-more {
     font-size: 0.6875rem;
     color: var(--text-subtle);
     font-weight: 500;

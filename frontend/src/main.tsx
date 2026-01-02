@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { BrowserRouter } from "react-router-dom";
 import { dark } from "@clerk/themes";
+import { CacheProvider } from "./contexts/CacheContext.tsx";
 import App from "./App.tsx";
 import "./styles/globals.css";
 
@@ -107,7 +108,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       }}
     >
       <BrowserRouter>
-        <App />
+        <CacheProvider>
+          <App />
+        </CacheProvider>
       </BrowserRouter>
     </ClerkProvider>
   </React.StrictMode>,

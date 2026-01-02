@@ -8,16 +8,18 @@ datasource database {
 }
 
 model User {
-  id                       String    @id @default(uuid())
-  clerkUserId              String    @unique
-  email                    String?
-  numberOfInterviewsAllowed Int      @default(3)
-  subscriptionStatus       String    @default("free")
-  stripeCustomerId         String?   @unique
-  stripeSubscriptionId     String?   @unique
-  subscriptionEndsAt       DateTime?
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime  @updatedAt
+  id                        String    @id @default(uuid())
+  clerkUserId               String    @unique
+  email                     String?
+  username                  String?   @unique
+  elo                       Int       @default(200)
+  numberOfInterviewsAllowed Int       @default(3)
+  subscriptionStatus        String    @default("free")
+  stripeCustomerId          String?   @unique
+  stripeSubscriptionId      String?   @unique
+  subscriptionEndsAt        DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
 
   @@index([clerkUserId])
   @@index([stripeCustomerId])
@@ -31,7 +33,6 @@ model completedInterview {
   completedAt DateTime  @default(now())
   clerkUserId String
   feedback    Json?
-  messages    Message[]
   interview   Interview @relation(fields: [interviewId], references: [id])
 
   @@index([clerkUserId])
@@ -48,15 +49,6 @@ model Interview {
   premium             Boolean              @default(false)
   tags                String[]             @default([])
   completedInterviews completedInterview[]
-}
-
-model Message {
-  id                   String             @id @default(uuid())
-  completedInterviewId String
-  content              String
-  sequence             Int
-  role                 String
-  completedInterview   completedInterview @relation(fields: [completedInterviewId], references: [id])
 }
 
 model InterviewSession {

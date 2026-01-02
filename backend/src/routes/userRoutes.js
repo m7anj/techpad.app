@@ -1,12 +1,19 @@
 import express from "express";
 import { requireAuth } from "@clerk/express";
-import { getUserByIdHandler } from "../controllers/userController.js";
+import {
+  getUserByIdHandler,
+  getUserByUsernameHandler,
+} from "../controllers/userController.js";
 import { checkSubscriptionExpiry } from "../middleware/checkSubscriptionExpiry.js";
 
 const router = express.Router();
 
 // Check subscription expiry before returning user data
 router.get("/me", requireAuth(), checkSubscriptionExpiry, getUserByIdHandler);
+
+// Public endpoint to get user profile by username
+router.get("/profile/:username", getUserByUsernameHandler);
+
 router.post("/webhooks/clerk", requireAuth(), async (req, res) => {
   try {
     const { id } = req.body;

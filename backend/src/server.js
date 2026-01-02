@@ -16,6 +16,7 @@ import webhookRoutes from "./routes/webhookRoutes.js";
 import interviewSessionRoutes from "./routes/interviewSessionRoutes.js";
 import checkoutRoutes from "./routes/checkoutRoutes.js";
 import proFeaturesRoutes from "./routes/proFeaturesRoutes.js";
+import leaderboardRoutes from "./routes/leaderboardRoutes.js";
 
 dotenv.config();
 
@@ -57,6 +58,7 @@ app.use("/user", userRoutes);
 app.use("/interview-session", interviewSessionRoutes);
 app.use("/checkout", checkoutRoutes);
 app.use("/pro", proFeaturesRoutes);
+app.use("/leaderboard", leaderboardRoutes);
 
 setupWebSocketRoutes(app);
 

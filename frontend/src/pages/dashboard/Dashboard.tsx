@@ -1,7 +1,7 @@
-import React, { use } from "react";
 import { useState, useEffect } from "react";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
+import { useCache } from "../../contexts/CacheContext";
 import "../../styles/shared-layout.css";
 import "./Dashboard.css";
 import { Navbar } from "../../components/Navbar";
@@ -21,14 +21,30 @@ const Dashboard = () => {
     () => HERO_QUOTES[Math.floor(Math.random() * HERO_QUOTES.length)],
   );
   const [userSubscription, setUserSubscription] = useState<any>(null);
-  const [upgradeModal, setUpgradeModal] = useState<{ isOpen: boolean; reason: "premium" | "limit" | null }>({
+  const [hasFetchedPresets, setHasFetchedPresets] = useState(false);
+  const [upgradeModal, setUpgradeModal] = useState<{
+    isOpen: boolean;
+    reason: "premium" | "limit" | null;
+  }>({
     isOpen: false,
     reason: null,
   });
+  const { getCache, setCache } = useCache();
+  const [hasFetchedUser, setHasFetchedUser] = useState(false);
 
-  // Fetch user subscription data from database
+  // Fetch user subscription data from database with caching
   useEffect(() => {
+    if (!user || hasFetchedUser) return;
+
     const fetchUserSubscription = async () => {
+      // Check cache first
+      const cachedData = getCache<any>("userData");
+      if (cachedData) {
+        setUserSubscription(cachedData.subscription);
+        setHasFetchedUser(true);
+        return;
+      }
+
       try {
         const token = await getToken();
         const res = await fetch("http://localhost:4000/user/me", {
@@ -40,6 +56,9 @@ const Dashboard = () => {
         if (res.ok) {
           const userData = await res.json();
           setUserSubscription(userData.subscription);
+          // Cache the user data
+          setCache("userData", userData);
+          setHasFetchedUser(true);
         }
       } catch (err) {
         console.error("Error fetching user subscription:", err);
@@ -47,10 +66,21 @@ const Dashboard = () => {
     };
 
     fetchUserSubscription();
-  }, [getToken]);
+  }, [user]);
 
   useEffect(() => {
+    if (!user || hasFetchedPresets) return;
+
     const fetchPresets = async () => {
+      // Check cache first
+      const cachedPresets = getCache<any[]>("presets");
+      if (cachedPresets) {
+        setPresets(cachedPresets);
+        setLoading(false);
+        setHasFetchedPresets(true);
+        return;
+      }
+
       try {
         setLoading(true);
         const token = await getToken();
@@ -67,6 +97,9 @@ const Dashboard = () => {
 
         const res_json = await res.json();
         setPresets(res_json);
+        // Cache presets data
+        setCache("presets", res_json);
+        setHasFetchedPresets(true);
       } catch (err) {
         console.log(err);
       } finally {
@@ -75,7 +108,7 @@ const Dashboard = () => {
     };
 
     fetchPresets();
-  }, [getToken]);
+  }, [user]);
 
   const openInterviewModal = (preset: any) => {
     setSelectedInterview(preset);
@@ -90,9 +123,10 @@ const Dashboard = () => {
 
     // Check if user is trying to access premium interview
     const isPremiumInterview = selectedInterview.premium;
-    const subscriptionPlan = user?.publicMetadata?.plan as string | undefined;
-    const subscriptionStatus = user?.publicMetadata?.subscriptionStatus as string | undefined;
-    const isProUser = subscriptionPlan?.includes('pro') && subscriptionStatus === 'active';
+    // Check subscription status from database instead of Clerk
+    const isProUser =
+      userSubscription?.status === "active" &&
+      userSubscription?.plan?.includes("pro");
 
     console.log("🔍 Interview Start Check:", {
       selectedInterview: selectedInterview.id,
@@ -112,7 +146,12 @@ const Dashboard = () => {
     // Check interview limit for free users
     // Use ?? instead of || to allow 0 value
     const interviewsAllowed = userSubscription?.interviewsAllowed ?? 3;
-    console.log("📊 Interviews allowed:", interviewsAllowed, "Is Pro:", isProUser);
+    console.log(
+      "📊 Interviews allowed:",
+      interviewsAllowed,
+      "Is Pro:",
+      isProUser,
+    );
 
     if (interviewsAllowed <= 0 && !isProUser) {
       closeInterviewModal();
@@ -166,9 +205,21 @@ const Dashboard = () => {
     if (tagLower.includes("network")) return "tag-networking";
     if (tagLower.includes("system design") || tagLower.includes("cloud"))
       return "tag-system-design";
-    if (tagLower.includes("os") || tagLower.includes("operating"))
+    if (
+      tagLower.includes("os") ||
+      tagLower.includes("operating") ||
+      tagLower.includes("kernel") ||
+      tagLower.includes("file") ||
+      tagLower.includes("schedul") ||
+      tagLower.includes("syste") ||
+      tagLower.includes("concurrency")
+    )
       return "tag-os";
-    if (tagLower.includes("devops") || tagLower.includes("admin"))
+    if (
+      tagLower.includes("devops") ||
+      tagLower.includes("admin") ||
+      tagLower.includes("it")
+    )
       return "tag-devops";
     if (tagLower.includes("web")) return "tag-web";
     if (
@@ -177,6 +228,13 @@ const Dashboard = () => {
       tagLower.includes("dsa")
     )
       return "tag-dsa";
+    if (
+      tagLower.includes("machine learning") ||
+      tagLower.includes("ml") ||
+      tagLower.includes("ai") ||
+      tagLower.includes("artificial intelligence")
+    )
+      return "tag-ml";
 
     // Default
     return "tag-default";
@@ -193,6 +251,11 @@ const Dashboard = () => {
       preset.tags?.some((tag: string) => tag.toLowerCase().includes(query))
     );
   });
+
+  // Check if user is pro - use database data instead of Clerk metadata
+  const isProUser =
+    userSubscription?.status === "active" &&
+    userSubscription?.plan?.includes("pro");
 
   return (
     <div className="dashboard page-wrapper">
@@ -269,13 +332,10 @@ const Dashboard = () => {
                   filteredPresets.map((preset) => (
                     <div
                       key={preset.id}
-                      className={`problem-row ${preset.premium ? "premium-locked" : ""}`}
+                      className={`problem-row ${preset.premium && !isProUser ? "premium-locked" : ""}`}
                       onClick={() => openInterviewModal(preset)}
                     >
                       <div className="row-left">
-                        <div className="td-status">
-                          <div className="status-dot"></div>
-                        </div>
                         <div className="td-number">{preset.id}.</div>
                         <div className="td-title-group">
                           <span className="problem-title">{preset.type}</span>
@@ -311,7 +371,7 @@ const Dashboard = () => {
                           </span>
                         </div>
                         <div className="td-lock">
-                          {preset.premium ? (
+                          {preset.premium && !isProUser ? (
                             <svg
                               width="16"
                               height="16"
@@ -330,26 +390,7 @@ const Dashboard = () => {
                               />
                               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                             </svg>
-                          ) : (
-                            <svg
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                            >
-                              <rect
-                                x="3"
-                                y="11"
-                                width="18"
-                                height="11"
-                                rx="2"
-                                ry="2"
-                              />
-                              <path d="M7 11V7a5 5 0 0 1 9.9 0M7 11v4" />
-                            </svg>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     </div>
@@ -454,8 +495,18 @@ const Dashboard = () => {
             )}
 
             <div className="modal-actions">
-              {selectedInterview.premium ? (
-                <button className="btn-start locked" disabled>
+              {selectedInterview.premium &&
+              !(user?.publicMetadata?.plan as string | undefined)?.includes(
+                "pro",
+              ) ? (
+                <button
+                  className="btn-start locked"
+                  disabled
+                  onClick={() => {
+                    closeInterviewModal();
+                    setUpgradeModal({ isOpen: true, reason: "premium" });
+                  }}
+                >
                   <svg
                     width="16"
                     height="16"
