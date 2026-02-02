@@ -22,7 +22,7 @@ dotenv.config();
 
 const prisma = new PrismaClient();
 const app = express();
-const port = 4000;
+const port = process.env.PORT || 4000;
 
 import expressWs from "express-ws";
 
@@ -33,7 +33,15 @@ app.set("trust proxy", 1);
 
 // Security and Middleware
 app.use(helmet());
-app.use(cors());
+
+// CORS configuration - restrict to frontend URL in production
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production'
+    ? [process.env.FRONTEND_URL?.replace(/\/$/, ''), 'https://techpad.app', 'https://www.techpad.app'].filter(Boolean)
+    : true, // Allow all origins in development
+  credentials: true,
+};
+app.use(cors(corsOptions));
 
 // Webhook route BEFORE express.json() to get raw body
 app.use("/webhooks", webhookRoutes);

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
 import { Navbar } from "../../components/Navbar";
+import { apiUrl } from "../../lib/api";
 import "../../styles/shared-layout.css";
 import "./InterviewResults.css";
 
@@ -31,7 +32,7 @@ const InterviewResults = () => {
       try {
         setLoading(true);
         const token = await getToken();
-        const res = await fetch(`http://localhost:4000/myInterviews/${id}`, {
+        const res = await fetch(apiUrl(`/myInterviews/${id}`), {
           headers: {
             Authorization: `Bearer ${token}`,
           },

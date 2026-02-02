@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import { useCache } from "../../contexts/CacheContext";
+import { apiUrl } from "../../lib/api";
 import "../../styles/shared-layout.css";
 import "./Dashboard.css";
 import { Navbar } from "../../components/Navbar";
@@ -47,7 +48,7 @@ const Dashboard = () => {
 
       try {
         const token = await getToken();
-        const res = await fetch("http://localhost:4000/user/me", {
+        const res = await fetch(apiUrl("/user/me"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -85,7 +86,7 @@ const Dashboard = () => {
         setLoading(true);
         const token = await getToken();
 
-        const res = await fetch("http://localhost:4000/explore", {
+        const res = await fetch(apiUrl("/explore"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -163,7 +164,7 @@ const Dashboard = () => {
       // Create a secure interview session
       const token = await getToken();
       const response = await fetch(
-        "http://localhost:4000/interview-session/create",
+        apiUrl("/interview-session/create"),
         {
           method: "POST",
           headers: {

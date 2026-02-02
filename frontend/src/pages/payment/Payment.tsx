@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import Logo from "../../components/Logo";
 import { Navbar } from "../../components/Navbar";
+import { apiUrl } from "../../lib/api";
 import "./Payment.css";
 
 const PRICE_IDS = {
@@ -31,7 +32,7 @@ const Payment = () => {
     try {
       const token = await getToken();
 
-      const response = await fetch("http://localhost:4000/checkout/create-session", {
+      const response = await fetch(apiUrl("/checkout/create-session"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

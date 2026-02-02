@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Webcam from "react-webcam";
 import Editor from "@monaco-editor/react";
+import { wsUrl } from "../../lib/api";
 import "./Interview.css";
 import { Whiteboard, WhiteboardRef } from "../../components/Whiteboard";
 import { Navbar } from "../../components/Navbar";
@@ -135,7 +136,7 @@ const Interview = () => {
     }
 
     const socket = new WebSocket(
-      `ws://localhost:4000/interview/${sessionToken}`,
+      wsUrl(`/interview/${sessionToken}`),
     );
 
     socket.onopen = () => {

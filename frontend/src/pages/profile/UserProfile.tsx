@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { Navbar } from "../../components/Navbar";
 import { useCache } from "../../contexts/CacheContext";
+import { apiUrl } from "../../lib/api";
 import "../../styles/shared-layout.css";
 import "./UserProfile.css";
 
@@ -107,7 +108,7 @@ const UserProfile = () => {
       try {
         setLoading(true);
         const res = await fetch(
-          `http://localhost:4000/user/profile/${username}`,
+          apiUrl(`/user/profile/${username}`),
         );
 
         if (!res.ok) {

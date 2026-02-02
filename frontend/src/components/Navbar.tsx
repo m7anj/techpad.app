@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Logo from "./Logo";
 import { UserDropdown } from "./UserDropdown";
 import { useCache } from "../contexts/CacheContext";
+import { apiUrl } from "../lib/api";
 import "./Navbar.css";
 
 interface NavbarProps {
@@ -51,7 +52,7 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
 
       try {
         const token = await getToken();
-        const response = await fetch("http://localhost:4000/user/me", {
+        const response = await fetch(apiUrl("/user/me"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },

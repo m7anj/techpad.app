@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { Navbar } from "../../components/Navbar";
 import { useCache } from "../../contexts/CacheContext";
+import { apiUrl } from "../../lib/api";
 import "../../styles/shared-layout.css";
 import "./Leaderboard.css";
 
@@ -38,7 +39,7 @@ const Leaderboard = () => {
 
       try {
         setLoading(true);
-        const res = await fetch("http://localhost:4000/leaderboard");
+        const res = await fetch(apiUrl("/leaderboard"));
 
         if (!res.ok) {
           throw new Error("Failed to fetch leaderboard");

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import { Navbar } from "../../components/Navbar";
+import { apiUrl } from "../../lib/api";
 import "../../styles/shared-layout.css";
 import "./MyInterviews.css";
 
@@ -37,7 +38,7 @@ const MyInterviews = () => {
     const fetchInterviews = async () => {
       try {
         const token = await getToken();
-        const response = await fetch("http://localhost:4000/myInterviews", {
+        const response = await fetch(apiUrl("/myInterviews"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
