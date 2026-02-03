@@ -2,7 +2,6 @@ import { SignInButton, SignUpButton } from "@clerk/clerk-react";
 import Logo from "../../components/Logo";
 import "./LandingPage.css";
 import "./animated.css";
-import icon from "../../icons/logo-text.png";
 
 const LandingPage = () => {
   return (

@@ -222,11 +222,6 @@ const UserProfile = () => {
 
   const openClerkProfile = () => {
     if (isOwnProfile && user) {
-      user
-        .update({
-          externalId: user.id,
-        })
-        .catch((err) => console.error("Update failed:", err));
       // Open Clerk user profile for image management
       window.open(`https://accounts.clerk.dev/user`, "_blank");
     }

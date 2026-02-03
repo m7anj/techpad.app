@@ -1,6 +1,6 @@
 interface ImportMetaEnv {
     readonly VITE_CLERK_PUBLISHABLE_KEY: string
-    // add other env variables here as needed
+    readonly VITE_API_BASE_URL?: string
 }
 
 interface ImportMeta {

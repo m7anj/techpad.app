@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Webcam from "react-webcam";
 import Editor from "@monaco-editor/react";
 import { wsUrl } from "../../lib/api";
@@ -10,8 +10,6 @@ import { Navbar } from "../../components/Navbar";
 const Interview = () => {
   const { id: sessionToken } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  // const preset = location.state?.preset;
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
@@ -22,7 +20,7 @@ const Interview = () => {
   // Interview state
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [answer, setAnswer] = useState("");
-  const [timer, setTimer] = useState(0);
+  const [_timer, setTimer] = useState(0);
   const [isFollowup, setIsFollowup] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -399,7 +397,7 @@ const Interview = () => {
     // Note: Not clearing code/whiteboard in case user wants to keep working on them
   };
 
-  const formatTime = (seconds: number) => {
+  const _formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
