@@ -4,10 +4,8 @@ import {
   validateInterviewSession,
   invalidateInterviewSession,
 } from "../services/interviewService.js";
-import { nodeModuleNameResolver } from "typescript";
 import { generateFollowups } from "../lib/followups.js";
 import { closeInterview } from "../services/interviewService.js";
-import { textToSpeech } from "../lib/textToSpeech.js";
 import {
   isClarifyingQuestion,
   generateClarification,
@@ -98,13 +96,12 @@ export default function setupWebSocketRoutes(app) {
       console.log(`✅ Session created successfully. Sending first question.`);
 
       const questionText = session.questions.questions[0].question;
-      const audioBase64 = await textToSpeech(questionText);
 
+      // Send question text - frontend handles TTS via browser SpeechSynthesis
       const firstQuestion = {
         type: "question",
         question: questionText,
         questionIndex: 1,
-        audio: audioBase64, // base64 encoded mp3
       };
       ws.send(JSON.stringify(firstQuestion));
 
@@ -140,8 +137,6 @@ export default function setupWebSocketRoutes(app) {
                 message.content,
               );
 
-              const clarificationAudio = await textToSpeech(clarificationText);
-
               // Send clarification as a followup but don't move forward
               ws.send(
                 JSON.stringify({
@@ -151,7 +146,6 @@ export default function setupWebSocketRoutes(app) {
                     isThisTheEnd: false,
                     forWhatQuestion: session.currentQuestionIndex,
                   },
-                  audio: clarificationAudio,
                 }),
               );
 
@@ -187,11 +181,6 @@ export default function setupWebSocketRoutes(app) {
             session.followupQuestions.push(followup.followup);
             session.currentQuestionText = followup.followup.followupQuestion; // Update current question
 
-            // generate audio for followup question
-            const followupAudio = await textToSpeech(
-              followup.followup.followupQuestion,
-            );
-
             // Send followup with proper type for frontend
             const followupMessage = {
               type: "followup",
@@ -200,7 +189,6 @@ export default function setupWebSocketRoutes(app) {
                 isThisTheEnd: followup.followup.isThisTheEnd,
                 forWhatQuestion: followup.followup.forWhatQuestion,
               },
-              audio: followupAudio, // base64 encoded mp3
             };
             console.log("Sending followup:", followupMessage);
             ws.send(JSON.stringify(followupMessage));
@@ -215,8 +203,6 @@ export default function setupWebSocketRoutes(app) {
                 message.content,
               );
 
-              const clarificationAudio = await textToSpeech(clarificationText);
-
               // Send clarification without moving forward
               ws.send(
                 JSON.stringify({
@@ -226,7 +212,6 @@ export default function setupWebSocketRoutes(app) {
                     isThisTheEnd: false,
                     forWhatQuestion: session.currentQuestionIndex,
                   },
-                  audio: clarificationAudio,
                 }),
               );
 
@@ -254,19 +239,16 @@ export default function setupWebSocketRoutes(app) {
                 session.currentQuestionIndex <=
                 session.questions.questions.length
               ) {
-                // generate audio for next question
                 const nextQuestionText =
                   session.questions.questions[session.currentQuestionIndex - 1]
                     .question;
                 session.currentQuestionText = nextQuestionText; // Update current question
-                const audioBase64 = await textToSpeech(nextQuestionText);
 
                 ws.send(
                   JSON.stringify({
                     type: "question",
                     question: nextQuestionText,
                     questionIndex: session.currentQuestionIndex,
-                    audio: audioBase64, // base64 encoded mp3
                     resetEditor: true, // Reset code and whiteboard for new main question
                   }),
                 );
@@ -308,19 +290,16 @@ export default function setupWebSocketRoutes(app) {
                 session.currentQuestionIndex <=
                 session.questions.questions.length
               ) {
-                // generate audio for next question
                 const nextQuestionText =
                   session.questions.questions[session.currentQuestionIndex - 1]
                     .question;
                 session.currentQuestionText = nextQuestionText; // Update current question
-                const audioBase64 = await textToSpeech(nextQuestionText);
 
                 ws.send(
                   JSON.stringify({
                     type: "question",
                     question: nextQuestionText,
                     questionIndex: session.currentQuestionIndex,
-                    audio: audioBase64, // base64 encoded mp3
                     resetEditor: true, // Reset code and whiteboard for new main question
                   }),
                 );
@@ -343,11 +322,6 @@ export default function setupWebSocketRoutes(app) {
               session.followupQuestions.push(followup.followup);
               session.currentQuestionText = followup.followup.followupQuestion; // Update current question
 
-              // generate audio for followup question
-              const followupAudio = await textToSpeech(
-                followup.followup.followupQuestion,
-              );
-
               // Send followup with proper type for frontend
               const followupMessage = {
                 type: "followup",
@@ -356,7 +330,6 @@ export default function setupWebSocketRoutes(app) {
                   isThisTheEnd: followup.followup.isThisTheEnd,
                   forWhatQuestion: followup.followup.forWhatQuestion,
                 },
-                audio: followupAudio, // base64 encoded mp3
               };
               console.log("Sending followup:", followupMessage);
               ws.send(JSON.stringify(followupMessage));

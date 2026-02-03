@@ -20,57 +20,55 @@ const Interview = () => {
   // Interview state
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [answer, setAnswer] = useState("");
-  const [_timer, setTimer] = useState(0);
   const [isFollowup, setIsFollowup] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
 
-  // audio playback
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  // Browser TTS state
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   // interim transcript for grey text display
   const [interimTranscript, setInterimTranscript] = useState("");
 
-  // play audio from base64 encoded mp3
-  const playAudio = (base64Audio: string) => {
-    try {
-      // stop any currently playing audio
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+  // Browser Text-to-Speech using SpeechSynthesis API
+  const speakText = (text: string) => {
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
 
-      setIsAudioPlaying(true);
-      setIsWaitingForResponse(false);
+    setIsSpeaking(true);
+    setIsWaitingForResponse(false);
 
-      // convert base64 to audio blob
-      const binaryString = atob(base64Audio);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      const blob = new Blob([bytes], { type: "audio/mp3" });
-      const audioUrl = URL.createObjectURL(blob);
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
 
-      // create and play audio
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-      audio.play().catch((err) => console.error("error playing audio:", err));
+    // Try to use a good English voice
+    const voices = window.speechSynthesis.getVoices();
+    const preferredVoice = voices.find(
+      (v) => v.lang.startsWith("en") && (v.name.includes("Google") || v.name.includes("Samantha") || v.name.includes("Daniel"))
+    ) || voices.find((v) => v.lang.startsWith("en"));
 
-      // cleanup url when done and start voice recognition
-      audio.onended = () => {
-        URL.revokeObjectURL(audioUrl);
-        setIsAudioPlaying(false);
-        // automatically start voice recognition after audio finishes
-        setTimeout(() => startListening(), 100);
-      };
-    } catch (error) {
-      console.error("error decoding audio:", error);
-      setIsAudioPlaying(false);
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
     }
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      // Start voice recognition after TTS finishes
+      setTimeout(() => startListening(), 100);
+    };
+
+    utterance.onerror = (event) => {
+      console.error("TTS error:", event);
+      setIsSpeaking(false);
+      // Still start listening even if TTS fails
+      setTimeout(() => startListening(), 100);
+    };
+
+    window.speechSynthesis.speak(utterance);
   };
 
   // Tools state
@@ -90,6 +88,15 @@ const Interview = () => {
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(
     null,
   );
+
+  // Load voices when component mounts
+  useEffect(() => {
+    // Voices may not be immediately available
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => {
+      window.speechSynthesis.getVoices();
+    };
+  }, []);
 
   // Warn before navigating away or closing tab
   useEffect(() => {
@@ -180,18 +187,14 @@ const Interview = () => {
           }
         }
 
-        // play audio if available
-        if (data.audio) {
-          playAudio(data.audio);
-        }
+        // Speak the question using browser TTS
+        speakText(data.question);
       } else if (data.type === "followup") {
         setCurrentQuestion(data.followup.question);
         setIsFollowup(true);
         setIsWaitingForResponse(false);
-        // play audio if available
-        if (data.audio) {
-          playAudio(data.audio);
-        }
+        // Speak the followup using browser TTS
+        speakText(data.followup.question);
       } else if (data.type === "interviewComplete") {
         setIsCompleting(true);
         setCurrentQuestion("Interview complete! Saving your results...");
@@ -213,11 +216,8 @@ const Interview = () => {
       console.log("Disconnected from interview");
       setIsConnected(false);
 
-      // stop audio when disconnecting
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      // Stop TTS when disconnecting
+      window.speechSynthesis.cancel();
 
       // stop recognition
       stopListening();
@@ -238,26 +238,12 @@ const Interview = () => {
     setWs(socket);
 
     return () => {
-      // stop audio when component unmounts
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      // Stop TTS when component unmounts
+      window.speechSynthesis.cancel();
       stopListening();
       socket.close();
     };
   }, [sessionToken, navigate, isCompleting]);
-
-  // Timer - starts automatically when connected
-  useEffect(() => {
-    if (!isConnected) return;
-
-    const interval = setInterval(() => {
-      setTimer((t) => t + 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isConnected]);
 
   useEffect(() => {
     if ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) {
@@ -313,7 +299,7 @@ const Interview = () => {
 
   // Start listening automatically
   const startListening = () => {
-    if (!recognitionRef.current || isAudioPlaying) return;
+    if (!recognitionRef.current || isSpeaking) return;
 
     // If already recording, don't start again
     if (isRecording) {
@@ -325,9 +311,9 @@ const Interview = () => {
       console.log("Starting recognition...");
       recognitionRef.current.start();
       setIsRecording(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If already started, ignore the error
-      if (error.message && error.message.includes("already started")) {
+      if (error instanceof Error && error.message.includes("already started")) {
         console.log("Recognition already started");
         setIsRecording(true);
       } else {
@@ -483,8 +469,15 @@ const Interview = () => {
                 )}
               </div>
 
+              {/* Speaking Indicator */}
+              {isSpeaking && (
+                <div className="recording-indicator speaking">
+                  <span className="rec-dot">🔊</span>
+                </div>
+              )}
+
               {/* Recording Indicator */}
-              {isRecording && (
+              {isRecording && !isSpeaking && (
                 <div className="recording-indicator">
                   <span className="rec-dot">●</span>
                 </div>
