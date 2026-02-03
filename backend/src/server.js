@@ -37,9 +37,16 @@ app.use(helmet());
 // CORS configuration - restrict to frontend URL in production
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
-    ? [process.env.FRONTEND_URL?.replace(/\/$/, ''), 'https://techpad.app', 'https://www.techpad.app'].filter(Boolean)
+    ? [
+        'https://techpad-app.vercel.app',
+        'https://techpad.app',
+        'https://www.techpad.app',
+        process.env.FRONTEND_URL?.replace(/\/$/, '')
+      ].filter(Boolean)
     : true, // Allow all origins in development
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 };
 app.use(cors(corsOptions));
 
