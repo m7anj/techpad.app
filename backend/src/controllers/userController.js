@@ -78,6 +78,7 @@ async function getUserByUsernameHandler(req, res) {
         elo: true,
         numberOfInterviewsAllowed: true,
         subscriptionStatus: true,
+        subscriptionEndsAt: true,
         createdAt: true,
       },
     });
@@ -120,6 +121,7 @@ async function getUserByUsernameHandler(req, res) {
       imageUrl: imageUrl,
       elo: dbUser.elo,
       subscriptionStatus: dbUser.subscriptionStatus,
+      subscriptionEndsAt: dbUser.subscriptionEndsAt,
       memberSince: dbUser.createdAt,
       stats: {
         totalInterviews: completedInterviews.length,

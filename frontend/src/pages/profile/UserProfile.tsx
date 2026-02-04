@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { Navbar } from "../../components/Navbar";
 import { useCache } from "../../contexts/CacheContext";
 import { apiUrl } from "../../lib/api";
@@ -29,6 +29,7 @@ interface UserProfile {
   imageUrl: string | null;
   elo: number;
   subscriptionStatus: string;
+  subscriptionEndsAt: string | null;
   memberSince: string;
   stats: UserStats;
 }
@@ -36,12 +37,18 @@ interface UserProfile {
 const UserProfile = () => {
   const { username } = useParams<{ username: string }>();
   const { user } = useUser();
+  const { getToken } = useAuth();
   const navigate = useNavigate();
-  const { getCache, setCache } = useCache();
+  const { getCache, setCache, clearCache } = useCache();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
+
+  // Subscription management state
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [subscriptionMessage, setSubscriptionMessage] = useState<string | null>(null);
 
   const isOwnProfile = user?.username === username;
 
@@ -136,6 +143,90 @@ const UserProfile = () => {
     fetchUserProfile();
   }, [username, user]);
 
+  // Handle cancel subscription
+  const handleCancelSubscription = async () => {
+    setCancelLoading(true);
+    setSubscriptionMessage(null);
+
+    try {
+      const token = await getToken();
+      const res = await fetch(apiUrl("/pro/cancel-subscription"), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to cancel subscription");
+      }
+
+      // Update local profile state
+      if (profile) {
+        setProfile({
+          ...profile,
+          subscriptionStatus: "cancelling",
+          subscriptionEndsAt: data.cancelAt,
+        });
+        // Clear cache so it refetches
+        clearCache(`profile_${username}`);
+        clearCache("userData");
+      }
+
+      setSubscriptionMessage(`Your subscription will end on ${new Date(data.cancelAt).toLocaleDateString()}`);
+      setShowCancelModal(false);
+    } catch (err) {
+      console.error("Error cancelling subscription:", err);
+      setSubscriptionMessage(err instanceof Error ? err.message : "Failed to cancel subscription");
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  // Handle reactivate subscription
+  const handleReactivateSubscription = async () => {
+    setCancelLoading(true);
+    setSubscriptionMessage(null);
+
+    try {
+      const token = await getToken();
+      const res = await fetch(apiUrl("/pro/reactivate-subscription"), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to reactivate subscription");
+      }
+
+      // Update local profile state
+      if (profile) {
+        setProfile({
+          ...profile,
+          subscriptionStatus: "active",
+        });
+        // Clear cache so it refetches
+        clearCache(`profile_${username}`);
+        clearCache("userData");
+      }
+
+      setSubscriptionMessage("Your subscription has been reactivated!");
+    } catch (err) {
+      console.error("Error reactivating subscription:", err);
+      setSubscriptionMessage(err instanceof Error ? err.message : "Failed to reactivate subscription");
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
   // Generate GitHub-style heatmap data for last 52 weeks
   const generateHeatmapData = () => {
     if (!profile) return [];
@@ -204,7 +295,8 @@ const UserProfile = () => {
     );
   }
 
-  const isPro = profile?.subscriptionStatus === "active";
+  const isPro = profile?.subscriptionStatus === "active" || profile?.subscriptionStatus === "cancelling";
+  const isCancelling = profile?.subscriptionStatus === "cancelling";
   const rankInfo = getRankInfo(profile?.elo || 200);
   const eloBadgeStyle = rankInfo
     ? {
@@ -310,6 +402,21 @@ const UserProfile = () => {
                       </svg>
                       PRO
                     </>
+                  ) : profile.subscriptionStatus === "cancelling" ? (
+                    <>
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 6v6l4 2" />
+                      </svg>
+                      PRO (Cancelling)
+                    </>
                   ) : (
                     <>
                       <svg
@@ -351,6 +458,81 @@ const UserProfile = () => {
               </p>
             </div>
           </div>
+
+          {/* Subscription Management - Only show for own profile with active subscription */}
+          {isOwnProfile && isPro && (
+            <div className="subscription-section">
+              <h2>Subscription</h2>
+              <div className="subscription-card">
+                <div className="subscription-info">
+                  <div className="subscription-status">
+                    <span className={`status-indicator ${isCancelling ? "cancelling" : "active"}`}></span>
+                    {isCancelling ? "Cancelling" : "Active"}
+                  </div>
+                  {profile.subscriptionEndsAt && (
+                    <p className="subscription-end-date">
+                      {isCancelling ? "Ends on: " : "Renews on: "}
+                      {new Date(profile.subscriptionEndsAt).toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </p>
+                  )}
+                </div>
+                <div className="subscription-actions">
+                  {isCancelling ? (
+                    <button
+                      className="btn-reactivate"
+                      onClick={handleReactivateSubscription}
+                      disabled={cancelLoading}
+                    >
+                      {cancelLoading ? "Processing..." : "Reactivate Subscription"}
+                    </button>
+                  ) : (
+                    <button
+                      className="btn-cancel-subscription"
+                      onClick={() => setShowCancelModal(true)}
+                      disabled={cancelLoading}
+                    >
+                      Cancel Subscription
+                    </button>
+                  )}
+                </div>
+                {subscriptionMessage && (
+                  <p className="subscription-message">{subscriptionMessage}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Cancel Confirmation Modal */}
+          {showCancelModal && (
+            <div className="modal-overlay" onClick={() => setShowCancelModal(false)}>
+              <div className="modal-content cancel-modal" onClick={(e) => e.stopPropagation()}>
+                <h2>Cancel Subscription?</h2>
+                <p>
+                  Are you sure you want to cancel your Pro subscription? You'll continue to have access until the end of your current billing period.
+                </p>
+                <div className="modal-actions">
+                  <button
+                    className="btn-keep"
+                    onClick={() => setShowCancelModal(false)}
+                    disabled={cancelLoading}
+                  >
+                    Keep Subscription
+                  </button>
+                  <button
+                    className="btn-confirm-cancel"
+                    onClick={handleCancelSubscription}
+                    disabled={cancelLoading}
+                  >
+                    {cancelLoading ? "Cancelling..." : "Yes, Cancel"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Stats Section */}
           <div className="stats-activity-row">
