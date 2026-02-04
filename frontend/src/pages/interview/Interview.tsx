@@ -36,6 +36,8 @@ const Interview = () => {
 
   // Text-to-Speech using Speechmatics API
   const speakText = async (text: string) => {
+    console.log("🔊 TTS: Starting speech for text length:", text.length);
+
     // Stop any ongoing speech
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
@@ -46,10 +48,13 @@ const Interview = () => {
     setIsWaitingForResponse(false);
 
     try {
+      console.log("🔊 TTS: Fetching audio from API...");
       const audio = await textToSpeech(text);
+      console.log("✅ TTS: Audio received, playing...");
       currentAudioRef.current = audio;
 
       audio.onended = () => {
+        console.log("✅ TTS: Finished playing");
         setIsSpeaking(false);
         currentAudioRef.current = null;
         // Start voice recognition after TTS finishes
@@ -57,7 +62,7 @@ const Interview = () => {
       };
 
       audio.onerror = (error) => {
-        console.error("TTS error:", error);
+        console.error("❌ TTS playback error:", error);
         setIsSpeaking(false);
         currentAudioRef.current = null;
         // Still start listening even if TTS fails
@@ -65,8 +70,9 @@ const Interview = () => {
       };
 
       await audio.play();
+      console.log("▶️ TTS: Audio is playing");
     } catch (error) {
-      console.error("Error generating speech:", error);
+      console.error("❌ Error generating speech:", error);
       setIsSpeaking(false);
       // Still start listening even if TTS fails
       setTimeout(() => startListening(), 100);
@@ -307,7 +313,26 @@ const Interview = () => {
 
   // Submit answer
   const submitAnswer = () => {
-    if (!ws || !answer.trim() || interimTranscript) return;
+    console.log("🔘 Submit clicked", {
+      hasWs: !!ws,
+      answerLength: answer.length,
+      hasInterim: !!interimTranscript
+    });
+
+    if (!ws) {
+      console.error("❌ No WebSocket connection");
+      return;
+    }
+
+    if (!answer.trim()) {
+      console.error("❌ No answer text");
+      return;
+    }
+
+    if (interimTranscript) {
+      console.log("⏸️ Waiting for interim transcript to finalize");
+      return;
+    }
 
     // stop listening when submitting
     stopListening();
