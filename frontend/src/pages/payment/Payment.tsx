@@ -7,8 +7,8 @@ import { apiUrl } from "../../lib/api";
 import "./Payment.css";
 
 const PRICE_IDS = {
-  pro_monthly: "price_1SdrpdE889nMAH6yTqfRE4r2",
-  pro_yearly: "price_1SeB7qE889nMAH6yykIydOuI",
+  pro_monthly: "price_1Sfhy1CaUfxQyoMlxzLtOxAy",
+  pro_yearly: "price_1Sfhy1CaUfxQyoMl9590zxgR",
 };
 
 const Payment = () => {
