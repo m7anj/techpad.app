@@ -30,7 +30,6 @@ export async function textToSpeech(text: string, voice?: string): Promise<HTMLAu
 export class SpeechmaticsSTT {
   private ws: WebSocket | null = null;
   private mediaRecorder: MediaRecorder | null = null;
-  private audioContext: AudioContext | null = null;
   private onInterimTranscript?: (text: string) => void;
   private onFinalTranscript?: (text: string) => void;
   private onError?: (error: string) => void;
@@ -105,43 +104,35 @@ export class SpeechmaticsSTT {
 
   private async startAudioCapture(): Promise<void> {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      // Create AudioContext for audio processing
-      this.audioContext = new AudioContext({ sampleRate: 16000 });
-      const source = this.audioContext.createMediaStreamSource(stream);
-
-      // Create a processor to get raw audio data
-      const processor = this.audioContext.createScriptProcessor(4096, 1, 1);
-
-      source.connect(processor);
-      processor.connect(this.audioContext.destination);
-
-      processor.onaudioprocess = (e) => {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-          const inputData = e.inputBuffer.getChannelData(0);
-          // Convert float32 to int16 PCM
-          const pcmData = new Int16Array(inputData.length);
-          for (let i = 0; i < inputData.length; i++) {
-            pcmData[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
-          }
-          this.ws.send(pcmData.buffer);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true,
         }
-      };
+      });
 
-      // Also use MediaRecorder as backup
+      // Use MediaRecorder to capture audio
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
+
       this.mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm',
+        mimeType,
       });
 
       this.mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0 && this.ws && this.ws.readyState === WebSocket.OPEN) {
           // Send as binary data
-          event.data.arrayBuffer().then((buffer) => {
-            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-              this.ws.send(buffer);
-            }
-          });
+          this.ws.send(event.data);
+        }
+      };
+
+      this.mediaRecorder.onerror = (error) => {
+        console.error('MediaRecorder error:', error);
+        if (this.onError) {
+          this.onError('Recording error');
         }
       };
 
@@ -175,16 +166,11 @@ export class SpeechmaticsSTT {
       this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
     }
 
-    if (this.audioContext) {
-      this.audioContext.close();
-    }
-
     if (this.ws) {
       this.ws.close();
     }
 
     this.mediaRecorder = null;
-    this.audioContext = null;
     this.ws = null;
   }
 

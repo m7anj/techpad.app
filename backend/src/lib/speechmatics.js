@@ -29,10 +29,11 @@ export async function textToSpeech(text, voice = 'en-US_AmandaNeural') {
 
     if (!response.ok) {
       const error = await response.text();
+      console.error('Speechmatics TTS API error:', response.status, error);
       throw new Error(`Speechmatics TTS API error: ${response.status} - ${error}`);
     }
 
-    const audioBuffer = await response.buffer();
+    const audioBuffer = Buffer.from(await response.arrayBuffer());
     return audioBuffer;
   } catch (error) {
     console.error('Error generating speech:', error);
@@ -57,16 +58,14 @@ export function createSpeechmaticsSTTConnection(clientWs, config = {}) {
   let isConnected = false;
 
   speechmaticsWs.on('open', () => {
-    console.log('Connected to Speechmatics STT');
+    console.log('🎤 Connected to Speechmatics STT');
     isConnected = true;
 
     // Send start recognition message
     const startMessage = {
       message: 'StartRecognition',
       audio_format: {
-        type: 'raw',
-        encoding: 'pcm_s16le',
-        sample_rate: 16000,
+        type: 'file',
       },
       transcription_config: {
         language: config.language || 'en',
@@ -76,6 +75,7 @@ export function createSpeechmaticsSTTConnection(clientWs, config = {}) {
     };
 
     speechmaticsWs.send(JSON.stringify(startMessage));
+    console.log('📤 Sent StartRecognition to Speechmatics');
 
     // Notify client that STT is ready
     if (clientWs.readyState === WebSocket.OPEN) {

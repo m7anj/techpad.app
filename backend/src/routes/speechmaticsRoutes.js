@@ -13,12 +13,17 @@ router.post('/tts', async (req, res) => {
   try {
     const { text, voice } = req.body;
 
+    console.log('📢 TTS Request:', { textLength: text?.length, voice });
+
     if (!text) {
+      console.error('❌ TTS Error: No text provided');
       return res.status(400).json({ error: 'Text is required' });
     }
 
     // Generate speech
+    console.log('🔊 Calling Speechmatics TTS API...');
     const audioBuffer = await textToSpeech(text, voice);
+    console.log('✅ TTS Success, audio size:', audioBuffer.length);
 
     // Return audio as MP3
     res.set({
@@ -27,8 +32,9 @@ router.post('/tts', async (req, res) => {
     });
     res.send(audioBuffer);
   } catch (error) {
-    console.error('TTS Error:', error);
-    res.status(500).json({ error: 'Failed to generate speech' });
+    console.error('❌ TTS Error:', error.message);
+    console.error('Stack:', error.stack);
+    res.status(500).json({ error: 'Failed to generate speech', details: error.message });
   }
 });
 
