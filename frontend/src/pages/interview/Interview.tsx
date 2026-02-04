@@ -188,17 +188,9 @@ const Interview = () => {
         setIsFollowup(false);
         setIsWaitingForResponse(false);
 
-        // Stop recording if active
-        if (sttRef.current && isRecording) {
-          try {
-            sttRef.current.stop();
-          } catch (err) {
-            console.log("STT already stopped");
-          }
-          setIsRecording(false);
-          setAnswer("");
-          setInterimTranscript("");
-        }
+        // Clear answer and interim for new question
+        setAnswer("");
+        setInterimTranscript("");
 
         // Reset code and whiteboard for new main question
         if (data.resetEditor) {
@@ -208,13 +200,18 @@ const Interview = () => {
           }
         }
 
-        // Speak the question using browser TTS
+        // Speak the question - STT will auto-start when speech ends
         speakText(data.question);
       } else if (data.type === "followup") {
         setCurrentQuestion(data.followup.question);
         setIsFollowup(true);
         setIsWaitingForResponse(false);
-        // Speak the followup using browser TTS
+
+        // Clear answer for new followup
+        setAnswer("");
+        setInterimTranscript("");
+
+        // Speak the followup - STT will auto-start when speech ends
         speakText(data.followup.question);
       } else if (data.type === "interviewComplete") {
         setIsCompleting(true);
@@ -316,22 +313,29 @@ const Interview = () => {
     console.log("🔘 Submit clicked", {
       hasWs: !!ws,
       answerLength: answer.length,
-      hasInterim: !!interimTranscript
+      answerText: answer.substring(0, 50),
+      hasInterim: !!interimTranscript,
+      interimText: interimTranscript.substring(0, 50)
     });
 
     if (!ws) {
       console.error("❌ No WebSocket connection");
+      alert("No connection to interview server. Please refresh the page.");
       return;
     }
 
     if (!answer.trim()) {
       console.error("❌ No answer text");
+      alert("Please type or speak your answer first.");
       return;
     }
 
+    // Force finalize any interim transcript
     if (interimTranscript) {
-      console.log("⏸️ Waiting for interim transcript to finalize");
-      return;
+      console.log("⏸️ Force finalizing interim transcript:", interimTranscript);
+      setAnswer((prev) => prev + " " + interimTranscript);
+      setInterimTranscript("");
+      // Don't return - continue with submission
     }
 
     // stop listening when submitting

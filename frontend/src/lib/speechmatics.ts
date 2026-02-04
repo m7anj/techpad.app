@@ -47,11 +47,18 @@ export class SpeechmaticsSTT {
 
   async start(): Promise<void> {
     if (this.isRecording) {
-      console.log('Already recording');
+      console.log('🎤 STT: Already recording, skipping start');
       return;
     }
 
+    // Clean up any existing connection first
+    if (this.ws || this.mediaRecorder) {
+      console.log('🎤 STT: Cleaning up old connection before starting new one');
+      this.cleanup();
+    }
+
     try {
+      console.log('🎤 STT: Creating new WebSocket connection');
       // Connect to Speechmatics WebSocket
       this.ws = new WebSocket(wsUrl('/api/speechmatics/stt'));
 
@@ -170,6 +177,7 @@ export class SpeechmaticsSTT {
   }
 
   private cleanup(): void {
+    console.log('🎤 STT: Cleaning up connection');
     this.isRecording = false;
 
     if (this.mediaRecorder) {
@@ -177,18 +185,30 @@ export class SpeechmaticsSTT {
 
       // Stop audio context and processor
       if (recorder.processor) {
-        recorder.processor.disconnect();
+        try {
+          recorder.processor.disconnect();
+        } catch (e) {
+          console.log('Processor already disconnected');
+        }
       }
       if (recorder.audioContext) {
-        recorder.audioContext.close();
+        try {
+          recorder.audioContext.close();
+        } catch (e) {
+          console.log('AudioContext already closed');
+        }
       }
       if (recorder.stream) {
         recorder.stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
       }
     }
 
-    if (this.ws) {
-      this.ws.close();
+    if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
+      try {
+        this.ws.close();
+      } catch (e) {
+        console.log('WebSocket already closed');
+      }
     }
 
     this.mediaRecorder = null;
