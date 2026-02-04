@@ -1,18 +1,20 @@
 import WebSocket from 'ws';
 
 const SPEECHMATICS_API_KEY = process.env.SPEECHMATICS_API_KEY;
-const SPEECHMATICS_TTS_URL = 'https://api.speechmatics.com/v1/synthesize';
+const SPEECHMATICS_TTS_BASE_URL = 'https://preview.tts.speechmatics.com/generate';
 const SPEECHMATICS_STT_URL = 'wss://eu2.rt.speechmatics.com/v2';
 
 /**
  * Convert text to speech using Speechmatics TTS API
  * @param {string} text - Text to convert to speech
- * @param {string} voice - Voice ID (default: 'en-US_AmandaNeural')
- * @returns {Promise<Buffer>} - Audio buffer in PCM format
+ * @param {string} voice - Voice name (default: 'sarah')
+ * @returns {Promise<Buffer>} - Audio buffer in MP3 format
  */
-export async function textToSpeech(text, voice = 'en-US_AmandaNeural') {
+export async function textToSpeech(text, voice = 'sarah') {
   try {
-    const response = await fetch(SPEECHMATICS_TTS_URL, {
+    const ttsUrl = `${SPEECHMATICS_TTS_BASE_URL}/${voice}`;
+
+    const response = await fetch(ttsUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${SPEECHMATICS_API_KEY}`,
@@ -20,10 +22,6 @@ export async function textToSpeech(text, voice = 'en-US_AmandaNeural') {
       },
       body: JSON.stringify({
         text,
-        voice_id: voice,
-        audio_format: {
-          type: 'mp3',
-        },
       }),
     });
 
@@ -61,11 +59,13 @@ export function createSpeechmaticsSTTConnection(clientWs, config = {}) {
     console.log('🎤 Connected to Speechmatics STT');
     isConnected = true;
 
-    // Send start recognition message
+    // Send start recognition message with raw PCM audio format
     const startMessage = {
       message: 'StartRecognition',
       audio_format: {
-        type: 'file',
+        type: 'raw',
+        encoding: 'pcm_s16le',
+        sample_rate: 44100,
       },
       transcription_config: {
         language: config.language || 'en',
@@ -75,7 +75,7 @@ export function createSpeechmaticsSTTConnection(clientWs, config = {}) {
     };
 
     speechmaticsWs.send(JSON.stringify(startMessage));
-    console.log('📤 Sent StartRecognition to Speechmatics');
+    console.log('📤 Sent StartRecognition to Speechmatics (PCM 44.1kHz)');
 
     // Notify client that STT is ready
     if (clientWs.readyState === WebSocket.OPEN) {

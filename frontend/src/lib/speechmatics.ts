@@ -107,36 +107,47 @@ export class SpeechmaticsSTT {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1,
-          sampleRate: 16000,
           echoCancellation: true,
           noiseSuppression: true,
         }
       });
 
-      // Use MediaRecorder to capture audio
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : 'audio/webm';
+      // Create AudioContext to get raw PCM data
+      const audioContext = new AudioContext({ sampleRate: 44100 });
+      const source = audioContext.createMediaStreamSource(stream);
 
-      this.mediaRecorder = new MediaRecorder(stream, {
-        mimeType,
-      });
+      // Use ScriptProcessor to get raw audio samples
+      const bufferSize = 4096;
+      const processor = audioContext.createScriptProcessor(bufferSize, 1, 1);
 
-      this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0 && this.ws && this.ws.readyState === WebSocket.OPEN) {
-          // Send as binary data
-          this.ws.send(event.data);
+      source.connect(processor);
+      processor.connect(audioContext.destination);
+
+      processor.onaudioprocess = (e) => {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          const inputData = e.inputBuffer.getChannelData(0);
+
+          // Convert Float32Array to Int16Array (PCM S16 LE)
+          const pcmData = new Int16Array(inputData.length);
+          for (let i = 0; i < inputData.length; i++) {
+            // Clamp to [-1, 1] and convert to 16-bit
+            const s = Math.max(-1, Math.min(1, inputData[i]));
+            pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+          }
+
+          // Send PCM data as binary
+          this.ws.send(pcmData.buffer);
         }
       };
 
-      this.mediaRecorder.onerror = (error) => {
-        console.error('MediaRecorder error:', error);
-        if (this.onError) {
-          this.onError('Recording error');
-        }
-      };
+      // Store references for cleanup
+      this.mediaRecorder = {
+        stream,
+        audioContext,
+        processor,
+        state: 'recording'
+      } as any;
 
-      this.mediaRecorder.start(100); // Send data every 100ms
     } catch (error) {
       console.error('Error accessing microphone:', error);
       if (this.onError) {
@@ -161,9 +172,19 @@ export class SpeechmaticsSTT {
   private cleanup(): void {
     this.isRecording = false;
 
-    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
-      this.mediaRecorder.stop();
-      this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    if (this.mediaRecorder) {
+      const recorder = this.mediaRecorder as any;
+
+      // Stop audio context and processor
+      if (recorder.processor) {
+        recorder.processor.disconnect();
+      }
+      if (recorder.audioContext) {
+        recorder.audioContext.close();
+      }
+      if (recorder.stream) {
+        recorder.stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+      }
     }
 
     if (this.ws) {
