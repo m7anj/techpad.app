@@ -8,7 +8,7 @@ AI-powered technical interview platform with real-time voice conversations, mult
 - **Frontend**: React 19 + Vite (port 5173)
 - **Backend**: Express 5 + express-ws (port 4000)
 - **Database**: PostgreSQL with Prisma ORM
-- **AI Services**: Groq API (LLaMA 3.3-70B), ElevenLabs TTS
+- **AI Services**: Groq API (LLaMA 3.3-70B), Speechmatics (STT & TTS)
 - **Auth**: Clerk (SSO + session management)
 - **Payments**: Stripe (subscriptions + webhooks)
 
@@ -22,8 +22,8 @@ AI-powered technical interview platform with real-time voice conversations, mult
 
 ### Real-Time Interview Flow (WebSocket)
 1. Backend generates 3-5 contextual questions via Groq based on topic/difficulty/tags
-2. Questions converted to speech via ElevenLabs TTS, sent as base64 over WebSocket
-3. User responds via Web Speech API (voice) or text input
+2. Questions converted to speech via Speechmatics TTS API
+3. User responds via Speechmatics real-time STT (voice) or text input
 4. AI detects clarification vs answers, provides follow-ups without advancing interview
 5. After all questions answered, Groq analyzes full conversation for scoring
 
@@ -86,13 +86,13 @@ Provides evidence-based feedback extracted from conversation history. Harsh pena
 - React 19, TypeScript, React Router
 - Monaco Editor, perfect-freehand
 - Radix UI, Framer Motion
-- Clerk React, Web Speech API
+- Clerk React, Speechmatics STT/TTS
 
 **Backend:**
 - Express 5, express-ws (WebSocket)
 - Prisma (PostgreSQL ORM)
 - Groq SDK (LLaMA 3.3-70B)
-- ElevenLabs API (TTS)
+- Speechmatics API (STT & TTS)
 - Stripe SDK
 - Clerk Backend SDK
 

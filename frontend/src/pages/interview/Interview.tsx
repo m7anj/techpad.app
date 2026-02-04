@@ -6,12 +6,14 @@ import { wsUrl } from "../../lib/api";
 import "./Interview.css";
 import { Whiteboard, WhiteboardRef } from "../../components/Whiteboard";
 import { Navbar } from "../../components/Navbar";
+import { textToSpeech, SpeechmaticsSTT } from "../../lib/speechmatics";
 
 const Interview = () => {
   const { id: sessionToken } = useParams();
   const navigate = useNavigate();
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const sttRef = useRef<SpeechmaticsSTT | null>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // WebSocket connection
   const [ws, setWs] = useState<WebSocket | null>(null);
@@ -32,43 +34,43 @@ const Interview = () => {
   // interim transcript for grey text display
   const [interimTranscript, setInterimTranscript] = useState("");
 
-  // Browser Text-to-Speech using SpeechSynthesis API
-  const speakText = (text: string) => {
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
+  // Text-to-Speech using Speechmatics API
+  const speakText = async (text: string) => {
+    // Stop any ongoing speech
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
 
     setIsSpeaking(true);
     setIsWaitingForResponse(false);
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
+    try {
+      const audio = await textToSpeech(text);
+      currentAudioRef.current = audio;
 
-    // Try to use a good English voice
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoice = voices.find(
-      (v) => v.lang.startsWith("en") && (v.name.includes("Google") || v.name.includes("Samantha") || v.name.includes("Daniel"))
-    ) || voices.find((v) => v.lang.startsWith("en"));
+      audio.onended = () => {
+        setIsSpeaking(false);
+        currentAudioRef.current = null;
+        // Start voice recognition after TTS finishes
+        setTimeout(() => startListening(), 100);
+      };
 
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
-    }
+      audio.onerror = (error) => {
+        console.error("TTS error:", error);
+        setIsSpeaking(false);
+        currentAudioRef.current = null;
+        // Still start listening even if TTS fails
+        setTimeout(() => startListening(), 100);
+      };
 
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      // Start voice recognition after TTS finishes
-      setTimeout(() => startListening(), 100);
-    };
-
-    utterance.onerror = (event) => {
-      console.error("TTS error:", event);
+      await audio.play();
+    } catch (error) {
+      console.error("Error generating speech:", error);
       setIsSpeaking(false);
       // Still start listening even if TTS fails
       setTimeout(() => startListening(), 100);
-    };
-
-    window.speechSynthesis.speak(utterance);
+    }
   };
 
   // Tools state
@@ -89,12 +91,25 @@ const Interview = () => {
     null,
   );
 
-  // Load voices when component mounts
+  // Initialize Speechmatics STT when component mounts
   useEffect(() => {
-    // Voices may not be immediately available
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged = () => {
-      window.speechSynthesis.getVoices();
+    sttRef.current = new SpeechmaticsSTT({
+      onInterimTranscript: (text) => {
+        setInterimTranscript(text);
+      },
+      onFinalTranscript: (text) => {
+        setAnswer((prev) => prev + text + " ");
+        setInterimTranscript("");
+      },
+      onError: (error) => {
+        console.error("STT error:", error);
+      },
+    });
+
+    return () => {
+      if (sttRef.current) {
+        sttRef.current.stop();
+      }
     };
   }, []);
 
@@ -168,11 +183,11 @@ const Interview = () => {
         setIsWaitingForResponse(false);
 
         // Stop recording if active
-        if (recognitionRef.current && isRecording) {
+        if (sttRef.current && isRecording) {
           try {
-            recognitionRef.current.stop();
+            sttRef.current.stop();
           } catch (err) {
-            console.log("Recognition already stopped");
+            console.log("STT already stopped");
           }
           setIsRecording(false);
           setAnswer("");
@@ -217,7 +232,10 @@ const Interview = () => {
       setIsConnected(false);
 
       // Stop TTS when disconnecting
-      window.speechSynthesis.cancel();
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
 
       // stop recognition
       stopListening();
@@ -239,67 +257,19 @@ const Interview = () => {
 
     return () => {
       // Stop TTS when component unmounts
-      window.speechSynthesis.cancel();
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
       stopListening();
       socket.close();
     };
   }, [sessionToken, navigate, isCompleting]);
 
-  useEffect(() => {
-    if ("SpeechRecognition" in window || "webkitSpeechRecognition" in window) {
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = "en-US";
-
-      recognition.onresult = (event) => {
-        let interim = "";
-        let final = "";
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            final += transcript;
-          } else {
-            interim += transcript;
-          }
-        }
-
-        // update interim transcript for grey text display
-        setInterimTranscript(interim);
-
-        // append final transcript to answer
-        if (final) {
-          setAnswer((prev) => prev + final + " ");
-        }
-      };
-
-      recognition.onend = () => {
-        console.log("Recognition ended");
-        setIsRecording(false);
-        setInterimTranscript("");
-      };
-
-      recognition.onerror = (event) => {
-        console.error("Recognition error:", event.error);
-        if (event.error === "aborted" || event.error === "no-speech") {
-          // These are recoverable errors, just mark as not recording
-          setIsRecording(false);
-        }
-      };
-
-      recognitionRef.current = recognition;
-    } else {
-      console.log("NO SPEECH RECOGNITION");
-    }
-  }, []);
 
   // Start listening automatically
-  const startListening = () => {
-    if (!recognitionRef.current || isSpeaking) return;
+  const startListening = async () => {
+    if (!sttRef.current || isSpeaking) return;
 
     // If already recording, don't start again
     if (isRecording) {
@@ -308,31 +278,25 @@ const Interview = () => {
     }
 
     try {
-      console.log("Starting recognition...");
-      recognitionRef.current.start();
+      console.log("Starting Speechmatics STT...");
+      await sttRef.current.start();
       setIsRecording(true);
     } catch (error: unknown) {
-      // If already started, ignore the error
-      if (error instanceof Error && error.message.includes("already started")) {
-        console.log("Recognition already started");
-        setIsRecording(true);
-      } else {
-        console.error("Error starting recognition:", error);
-      }
+      console.error("Error starting STT:", error);
     }
   };
 
   // Stop listening
   const stopListening = () => {
-    if (!recognitionRef.current) return;
+    if (!sttRef.current) return;
 
     try {
-      console.log("Stopping recognition...");
-      recognitionRef.current.stop();
+      console.log("Stopping Speechmatics STT...");
+      sttRef.current.stop();
       setIsRecording(false);
       setInterimTranscript("");
     } catch (error) {
-      console.error("Error stopping recognition:", error);
+      console.error("Error stopping STT:", error);
     }
   };
 

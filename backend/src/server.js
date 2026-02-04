@@ -17,6 +17,7 @@ import interviewSessionRoutes from "./routes/interviewSessionRoutes.js";
 import checkoutRoutes from "./routes/checkoutRoutes.js";
 import proFeaturesRoutes from "./routes/proFeaturesRoutes.js";
 import leaderboardRoutes from "./routes/leaderboardRoutes.js";
+import speechmaticsRoutes, { setupSpeechmaticsWebSocket } from "./routes/speechmaticsRoutes.js";
 
 dotenv.config();
 
@@ -74,8 +75,10 @@ app.use("/interview-session", interviewSessionRoutes);
 app.use("/checkout", checkoutRoutes);
 app.use("/pro", proFeaturesRoutes);
 app.use("/leaderboard", leaderboardRoutes);
+app.use("/api/speechmatics", speechmaticsRoutes);
 
 setupWebSocketRoutes(app);
+setupSpeechmaticsWebSocket(app);
 
 // Root route
 app.get("/", (req, res) => {
