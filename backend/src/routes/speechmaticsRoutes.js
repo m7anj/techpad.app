@@ -48,31 +48,41 @@ export function setupSpeechmaticsWebSocket(app) {
 
     let sttConnection = null;
 
-    ws.on('message', (data) => {
-      try {
-        // Try to parse as JSON first (for control messages)
-        const message = JSON.parse(data.toString());
+    let clientSampleRate = 48000; // Default sample rate
 
-        if (message.type === 'start') {
-          // Start STT connection
-          if (!sttConnection) {
-            console.log('Starting Speechmatics STT connection');
-            sttConnection = createSpeechmaticsSTTConnection(ws, {
-              language: message.language || 'en',
-            });
+    ws.on('message', (data) => {
+      // Check if it's binary (audio) or text (JSON)
+      const isBinary = Buffer.isBuffer(data) || data instanceof ArrayBuffer;
+
+      if (!isBinary) {
+        try {
+          const message = JSON.parse(data.toString());
+          console.log('📨 STT received message:', message.type);
+
+          if (message.type === 'start') {
+            if (!sttConnection) {
+              console.log('🚀 Starting Speechmatics STT connection...');
+              sttConnection = createSpeechmaticsSTTConnection(ws, {
+                language: message.language || 'en',
+                sampleRate: clientSampleRate,
+              });
+            }
+          } else if (message.type === 'sampleRate') {
+            clientSampleRate = message.sampleRate || 48000;
+            console.log('🎙️ Client sample rate:', clientSampleRate);
+          } else if (message.type === 'stop') {
+            if (sttConnection) {
+              console.log('🛑 Stopping Speechmatics STT connection');
+              sttConnection.close();
+              sttConnection = null;
+            }
           }
-        } else if (message.type === 'stop') {
-          // Stop STT connection
-          if (sttConnection) {
-            console.log('Stopping Speechmatics STT connection');
-            sttConnection.close();
-            sttConnection = null;
-          }
+        } catch (error) {
+          console.error('❌ Error parsing STT message:', error.message);
         }
-      } catch (error) {
-        // If not JSON, treat as binary audio data
+      } else {
+        // Binary audio data
         if (sttConnection && sttConnection.isConnected()) {
-          // Forward audio to Speechmatics
           sttConnection.sendAudio(data);
         }
       }

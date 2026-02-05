@@ -1,7 +1,7 @@
-import { apiUrl, wsUrl } from './api';
+import { apiUrl } from './api';
 
 /**
- * Convert text to speech using Speechmatics TTS API
+ * Convert text to speech using Speechmatics TTS API (via backend)
  * Returns an Audio object ready to play
  */
 export async function textToSpeech(text: string, voice?: string): Promise<HTMLAudioElement> {
@@ -25,194 +25,106 @@ export async function textToSpeech(text: string, voice?: string): Promise<HTMLAu
 }
 
 /**
- * Create a Speechmatics STT WebSocket connection
+ * Simple audio recorder - records audio locally, returns blob when stopped
+ * No streaming, no live transcription - just record and send
  */
-export class SpeechmaticsSTT {
-  private ws: WebSocket | null = null;
+export class AudioRecorder {
   private mediaRecorder: MediaRecorder | null = null;
-  private onInterimTranscript?: (text: string) => void;
-  private onFinalTranscript?: (text: string) => void;
-  private onError?: (error: string) => void;
+  private audioChunks: Blob[] = [];
+  private stream: MediaStream | null = null;
   private isRecording = false;
-
-  constructor(callbacks: {
-    onInterimTranscript?: (text: string) => void;
-    onFinalTranscript?: (text: string) => void;
-    onError?: (error: string) => void;
-  }) {
-    this.onInterimTranscript = callbacks.onInterimTranscript;
-    this.onFinalTranscript = callbacks.onFinalTranscript;
-    this.onError = callbacks.onError;
-  }
 
   async start(): Promise<void> {
     if (this.isRecording) {
-      console.log('🎤 STT: Already recording, skipping start');
+      console.log('Already recording');
       return;
     }
 
-    // Clean up any existing connection first
-    if (this.ws || this.mediaRecorder) {
-      console.log('🎤 STT: Cleaning up old connection before starting new one');
-      this.cleanup();
-    }
-
     try {
-      console.log('🎤 STT: Creating new WebSocket connection');
-      // Connect to Speechmatics WebSocket
-      this.ws = new WebSocket(wsUrl('/api/speechmatics/stt'));
-
-      this.ws.onopen = async () => {
-        console.log('Connected to Speechmatics STT');
-
-        // Send start message
-        this.ws?.send(JSON.stringify({ type: 'start', language: 'en' }));
-
-        // Start capturing audio from microphone
-        await this.startAudioCapture();
-      };
-
-      this.ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-
-          if (data.type === 'transcript_interim' && this.onInterimTranscript) {
-            this.onInterimTranscript(data.text);
-          } else if (data.type === 'transcript_final' && this.onFinalTranscript) {
-            this.onFinalTranscript(data.text);
-          } else if (data.type === 'stt_error' && this.onError) {
-            this.onError(data.error);
-          }
-        } catch (error) {
-          console.error('Error parsing STT message:', error);
-        }
-      };
-
-      this.ws.onerror = (error) => {
-        console.error('STT WebSocket error:', error);
-        if (this.onError) {
-          this.onError('Connection error');
-        }
-      };
-
-      this.ws.onclose = () => {
-        console.log('STT WebSocket closed');
-        this.cleanup();
-      };
-
-      this.isRecording = true;
-    } catch (error) {
-      console.error('Error starting STT:', error);
-      if (this.onError) {
-        this.onError(error instanceof Error ? error.message : 'Unknown error');
-      }
-    }
-  }
-
-  private async startAudioCapture(): Promise<void> {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      this.stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
         }
       });
 
-      // Create AudioContext to get raw PCM data
-      const audioContext = new AudioContext({ sampleRate: 44100 });
-      const source = audioContext.createMediaStreamSource(stream);
+      this.audioChunks = [];
+      this.mediaRecorder = new MediaRecorder(this.stream, {
+        mimeType: this.getSupportedMimeType(),
+      });
 
-      // Use ScriptProcessor to get raw audio samples
-      const bufferSize = 4096;
-      const processor = audioContext.createScriptProcessor(bufferSize, 1, 1);
-
-      source.connect(processor);
-      processor.connect(audioContext.destination);
-
-      processor.onaudioprocess = (e) => {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-          const inputData = e.inputBuffer.getChannelData(0);
-
-          // Convert Float32Array to Int16Array (PCM S16 LE)
-          const pcmData = new Int16Array(inputData.length);
-          for (let i = 0; i < inputData.length; i++) {
-            // Clamp to [-1, 1] and convert to 16-bit
-            const s = Math.max(-1, Math.min(1, inputData[i]));
-            pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-          }
-
-          // Send PCM data as binary
-          this.ws.send(pcmData.buffer);
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
         }
       };
 
-      // Store references for cleanup
-      this.mediaRecorder = {
-        stream,
-        audioContext,
-        processor,
-        state: 'recording'
-      } as any;
-
+      this.mediaRecorder.start(1000); // Collect data every second
+      this.isRecording = true;
+      console.log('🎤 Recording started');
     } catch (error) {
-      console.error('Error accessing microphone:', error);
-      if (this.onError) {
-        this.onError('Microphone access denied');
-      }
+      console.error('Error starting recording:', error);
+      throw error;
     }
   }
 
-  stop(): void {
-    if (!this.isRecording) {
-      return;
+  private getSupportedMimeType(): string {
+    const types = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/mp4',
+    ];
+
+    for (const type of types) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        console.log('Using audio format:', type);
+        return type;
+      }
     }
 
-    // Send stop message
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: 'stop' }));
-    }
+    return 'audio/webm'; // Default fallback
+  }
 
+  stop(): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      if (!this.mediaRecorder || !this.isRecording) {
+        reject(new Error('Not recording'));
+        return;
+      }
+
+      this.mediaRecorder.onstop = () => {
+        const mimeType = this.mediaRecorder?.mimeType || 'audio/webm';
+        const audioBlob = new Blob(this.audioChunks, { type: mimeType });
+        console.log('🛑 Recording stopped, size:', audioBlob.size, 'bytes');
+
+        // Clean up
+        this.cleanup();
+
+        resolve(audioBlob);
+      };
+
+      this.mediaRecorder.stop();
+      this.isRecording = false;
+    });
+  }
+
+  cancel(): void {
+    if (this.mediaRecorder && this.isRecording) {
+      this.mediaRecorder.stop();
+    }
     this.cleanup();
+    this.isRecording = false;
+    console.log('🛑 Recording cancelled');
   }
 
   private cleanup(): void {
-    console.log('🎤 STT: Cleaning up connection');
-    this.isRecording = false;
-
-    if (this.mediaRecorder) {
-      const recorder = this.mediaRecorder as any;
-
-      // Stop audio context and processor
-      if (recorder.processor) {
-        try {
-          recorder.processor.disconnect();
-        } catch (e) {
-          console.log('Processor already disconnected');
-        }
-      }
-      if (recorder.audioContext) {
-        try {
-          recorder.audioContext.close();
-        } catch (e) {
-          console.log('AudioContext already closed');
-        }
-      }
-      if (recorder.stream) {
-        recorder.stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
-      }
+    if (this.stream) {
+      this.stream.getTracks().forEach(track => track.stop());
+      this.stream = null;
     }
-
-    if (this.ws && this.ws.readyState !== WebSocket.CLOSED) {
-      try {
-        this.ws.close();
-      } catch (e) {
-        console.log('WebSocket already closed');
-      }
-    }
-
     this.mediaRecorder = null;
-    this.ws = null;
+    this.audioChunks = [];
   }
 
   getIsRecording(): boolean {

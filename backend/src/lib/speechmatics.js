@@ -3,6 +3,7 @@ import WebSocket from 'ws';
 const SPEECHMATICS_API_KEY = process.env.SPEECHMATICS_API_KEY;
 const SPEECHMATICS_TTS_BASE_URL = 'https://preview.tts.speechmatics.com/generate';
 const SPEECHMATICS_STT_URL = 'wss://eu2.rt.speechmatics.com/v2';
+const SPEECHMATICS_BATCH_URL = 'https://asr.api.speechmatics.com/v2/jobs';
 
 /**
  * Convert text to speech using Speechmatics TTS API
@@ -47,6 +48,16 @@ export async function textToSpeech(text, voice = 'sarah') {
  * @returns {Object} - Connection handlers
  */
 export function createSpeechmaticsSTTConnection(clientWs, config = {}) {
+  console.log('🔌 Creating Speechmatics connection...');
+  console.log('   URL:', SPEECHMATICS_STT_URL);
+  console.log('   API Key set:', !!SPEECHMATICS_API_KEY, SPEECHMATICS_API_KEY ? `(${SPEECHMATICS_API_KEY.substring(0, 8)}...)` : '(missing)');
+
+  if (!SPEECHMATICS_API_KEY) {
+    console.error('❌ SPEECHMATICS_API_KEY is not set!');
+    clientWs.send(JSON.stringify({ type: 'stt_error', error: 'API key not configured' }));
+    return { sendAudio: () => {}, close: () => {}, isConnected: () => false };
+  }
+
   const speechmaticsWs = new WebSocket(SPEECHMATICS_STT_URL, {
     headers: {
       'Authorization': `Bearer ${SPEECHMATICS_API_KEY}`,
@@ -56,21 +67,24 @@ export function createSpeechmaticsSTTConnection(clientWs, config = {}) {
   let isConnected = false;
 
   speechmaticsWs.on('open', () => {
-    console.log('🎤 Connected to Speechmatics STT');
+    console.log('✅ Connected to Speechmatics STT');
     isConnected = true;
 
     // Send start recognition message with raw PCM audio format
+    const sampleRate = config.sampleRate || 48000;
+    console.log('🎙️ Using sample rate for Speechmatics:', sampleRate);
+
     const startMessage = {
       message: 'StartRecognition',
       audio_format: {
         type: 'raw',
         encoding: 'pcm_s16le',
-        sample_rate: 44100,
+        sample_rate: sampleRate,
       },
       transcription_config: {
         language: config.language || 'en',
         enable_partials: true,
-        max_delay: 2.0,
+        max_delay: 3.0, // Longer delay = fewer, more complete transcripts
       },
     };
 
@@ -89,28 +103,35 @@ export function createSpeechmaticsSTTConnection(clientWs, config = {}) {
   speechmaticsWs.on('message', (data) => {
     try {
       const message = JSON.parse(data.toString());
+      console.log('📥 Speechmatics message:', message.message, message);
 
       // Handle different message types
       if (message.message === 'AddPartialTranscript') {
         // Interim results
+        const text = message.metadata?.transcript || '';
+        console.log('📝 Interim transcript:', text);
         if (clientWs.readyState === WebSocket.OPEN) {
           clientWs.send(JSON.stringify({
             type: 'transcript_interim',
-            text: message.metadata?.transcript || '',
+            text: text,
           }));
         }
       } else if (message.message === 'AddTranscript') {
         // Final results
+        const text = message.metadata?.transcript || '';
+        console.log('✅ Final transcript:', text);
         if (clientWs.readyState === WebSocket.OPEN) {
           clientWs.send(JSON.stringify({
             type: 'transcript_final',
-            text: message.metadata?.transcript || '',
+            text: text,
           }));
         }
       } else if (message.message === 'EndOfTranscript') {
-        console.log('End of transcript');
+        console.log('🏁 End of transcript');
+      } else if (message.message === 'RecognitionStarted') {
+        console.log('🎙️ Speechmatics recognition started');
       } else if (message.message === 'Error') {
-        console.error('Speechmatics STT error:', message);
+        console.error('❌ Speechmatics STT error:', message);
         if (clientWs.readyState === WebSocket.OPEN) {
           clientWs.send(JSON.stringify({
             type: 'stt_error',
@@ -124,11 +145,12 @@ export function createSpeechmaticsSTTConnection(clientWs, config = {}) {
   });
 
   speechmaticsWs.on('error', (error) => {
-    console.error('Speechmatics WebSocket error:', error);
+    console.error('❌ Speechmatics WebSocket error:', error.message || error);
+    console.error('   Full error:', error);
     if (clientWs.readyState === WebSocket.OPEN) {
       clientWs.send(JSON.stringify({
         type: 'stt_error',
-        error: error.message,
+        error: error.message || 'Connection failed',
       }));
     }
   });
@@ -144,10 +166,17 @@ export function createSpeechmaticsSTTConnection(clientWs, config = {}) {
     }
   });
 
+  // Track audio chunks for debugging
+  let audioChunkCount = 0;
+
   // Return handlers for the connection
   return {
     sendAudio: (audioData) => {
       if (isConnected && speechmaticsWs.readyState === WebSocket.OPEN) {
+        audioChunkCount++;
+        if (audioChunkCount % 50 === 1) {
+          console.log(`🔊 Audio chunk #${audioChunkCount}, size: ${audioData.length} bytes`);
+        }
         // Send audio data as binary
         speechmaticsWs.send(audioData);
       }

@@ -6,13 +6,13 @@ import { wsUrl } from "../../lib/api";
 import "./Interview.css";
 import { Whiteboard, WhiteboardRef } from "../../components/Whiteboard";
 import { Navbar } from "../../components/Navbar";
-import { textToSpeech, SpeechmaticsSTT } from "../../lib/speechmatics";
+import { AudioRecorder } from "../../lib/speechmatics";
 
 const Interview = () => {
   const { id: sessionToken } = useParams();
   const navigate = useNavigate();
 
-  const sttRef = useRef<SpeechmaticsSTT | null>(null);
+  const recorderRef = useRef<AudioRecorder | null>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // WebSocket connection
@@ -21,7 +21,6 @@ const Interview = () => {
 
   // Interview state
   const [currentQuestion, setCurrentQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
   const [isFollowup, setIsFollowup] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -31,11 +30,8 @@ const Interview = () => {
   // Browser TTS state
   const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // interim transcript for grey text display
-  const [interimTranscript, setInterimTranscript] = useState("");
-
-  // Text-to-Speech using Speechmatics API
-  const speakText = async (text: string) => {
+  // Text-to-Speech - plays pre-generated audio or falls back to browser TTS
+  const speakText = async (text: string, audioBase64?: string) => {
     console.log("🔊 TTS: Starting speech for text length:", text.length);
 
     // Stop any ongoing speech
@@ -47,35 +43,62 @@ const Interview = () => {
     setIsSpeaking(true);
     setIsWaitingForResponse(false);
 
-    try {
-      console.log("🔊 TTS: Fetching audio from API...");
-      const audio = await textToSpeech(text);
-      console.log("✅ TTS: Audio received, playing...");
-      currentAudioRef.current = audio;
-
-      audio.onended = () => {
-        console.log("✅ TTS: Finished playing");
-        setIsSpeaking(false);
-        currentAudioRef.current = null;
-        // Start voice recognition after TTS finishes
-        setTimeout(() => startListening(), 100);
-      };
-
-      audio.onerror = (error) => {
-        console.error("❌ TTS playback error:", error);
-        setIsSpeaking(false);
-        currentAudioRef.current = null;
-        // Still start listening even if TTS fails
-        setTimeout(() => startListening(), 100);
-      };
-
-      await audio.play();
-      console.log("▶️ TTS: Audio is playing");
-    } catch (error) {
-      console.error("❌ Error generating speech:", error);
+    const onAudioEnd = () => {
+      console.log("✅ TTS: Finished playing");
       setIsSpeaking(false);
-      // Still start listening even if TTS fails
-      setTimeout(() => startListening(), 100);
+      currentAudioRef.current = null;
+      // Start recording after TTS finishes
+      setTimeout(() => startRecording(), 100);
+    };
+
+    const onAudioError = () => {
+      console.error("❌ TTS playback error");
+      setIsSpeaking(false);
+      currentAudioRef.current = null;
+      // Still start recording even if TTS fails
+      setTimeout(() => startRecording(), 100);
+    };
+
+    // If pre-generated audio is provided, play it directly (no API call needed)
+    if (audioBase64) {
+      try {
+        console.log("▶️ TTS: Playing pre-generated audio...");
+        const audioBlob = new Blob(
+          [Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0))],
+          { type: 'audio/mpeg' }
+        );
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        currentAudioRef.current = audio;
+
+        audio.onended = onAudioEnd;
+        audio.onerror = onAudioError;
+
+        await audio.play();
+        console.log("▶️ TTS: Audio is playing");
+        return;
+      } catch (error) {
+        console.error("❌ Error playing pre-generated audio:", error);
+        // Fall through to browser TTS
+      }
+    }
+
+    // Fallback: Use browser's built-in speech synthesis (instant, no API call)
+    try {
+      console.log("🔊 TTS: Using browser speech synthesis...");
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      utterance.onend = onAudioEnd;
+      utterance.onerror = onAudioError;
+
+      speechSynthesis.speak(utterance);
+      console.log("▶️ TTS: Browser speech started");
+    } catch (error) {
+      console.error("❌ Error with browser TTS:", error);
+      setIsSpeaking(false);
+      setTimeout(() => startRecording(), 100);
     }
   };
 
@@ -93,28 +116,15 @@ const Interview = () => {
 
   // Navigation warning
   const [showNavigationWarning, setShowNavigationWarning] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<string | null>(
-    null,
-  );
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
-  // Initialize Speechmatics STT when component mounts
+  // Initialize AudioRecorder when component mounts
   useEffect(() => {
-    sttRef.current = new SpeechmaticsSTT({
-      onInterimTranscript: (text) => {
-        setInterimTranscript(text);
-      },
-      onFinalTranscript: (text) => {
-        setAnswer((prev) => prev + text + " ");
-        setInterimTranscript("");
-      },
-      onError: (error) => {
-        console.error("STT error:", error);
-      },
-    });
+    recorderRef.current = new AudioRecorder();
 
     return () => {
-      if (sttRef.current) {
-        sttRef.current.stop();
+      if (recorderRef.current) {
+        recorderRef.current.cancel();
       }
     };
   }, []);
@@ -161,11 +171,11 @@ const Interview = () => {
       return;
     }
 
-    const socket = new WebSocket(
-      wsUrl(`/interview/${sessionToken}`),
-    );
+    let isCleanedUp = false;
+    const socket = new WebSocket(wsUrl(`/interview/${sessionToken}`));
 
     socket.onopen = () => {
+      if (isCleanedUp) return;
       setIsConnected(true);
       setIsWaitingForResponse(true);
       console.log("WebSocket connection opened");
@@ -188,10 +198,6 @@ const Interview = () => {
         setIsFollowup(false);
         setIsWaitingForResponse(false);
 
-        // Clear answer and interim for new question
-        setAnswer("");
-        setInterimTranscript("");
-
         // Reset code and whiteboard for new main question
         if (data.resetEditor) {
           setCode("");
@@ -200,19 +206,15 @@ const Interview = () => {
           }
         }
 
-        // Speak the question - STT will auto-start when speech ends
-        speakText(data.question);
+        // Speak the question - recording starts when speech ends
+        speakText(data.question, data.audio);
       } else if (data.type === "followup") {
         setCurrentQuestion(data.followup.question);
         setIsFollowup(true);
         setIsWaitingForResponse(false);
 
-        // Clear answer for new followup
-        setAnswer("");
-        setInterimTranscript("");
-
-        // Speak the followup - STT will auto-start when speech ends
-        speakText(data.followup.question);
+        // Speak the followup - recording starts when speech ends
+        speakText(data.followup.question, data.audio);
       } else if (data.type === "interviewComplete") {
         setIsCompleting(true);
         setCurrentQuestion("Interview complete! Saving your results...");
@@ -240,8 +242,11 @@ const Interview = () => {
         currentAudioRef.current = null;
       }
 
-      // stop recognition
-      stopListening();
+      // Cancel recording
+      if (recorderRef.current) {
+        recorderRef.current.cancel();
+        setIsRecording(false);
+      }
 
       // If interview was completing, wait a bit then redirect
       if (isCompleting) {
@@ -259,47 +264,50 @@ const Interview = () => {
     setWs(socket);
 
     return () => {
+      isCleanedUp = true;
       // Stop TTS when component unmounts
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
         currentAudioRef.current = null;
       }
-      stopListening();
+      if (recorderRef.current) {
+        recorderRef.current.cancel();
+      }
       socket.close();
     };
   }, [sessionToken, navigate, isCompleting]);
 
+  // Start recording
+  const startRecording = async () => {
+    if (!recorderRef.current || isSpeaking) return;
 
-  // Start listening automatically
-  const startListening = async () => {
-    if (!sttRef.current || isSpeaking) return;
-
-    // If already recording, don't start again
     if (isRecording) {
       console.log("Already recording, skipping start");
       return;
     }
 
     try {
-      console.log("Starting Speechmatics STT...");
-      await sttRef.current.start();
+      console.log("🎤 Starting recording...");
+      await recorderRef.current.start();
       setIsRecording(true);
-    } catch (error: unknown) {
-      console.error("Error starting STT:", error);
+    } catch (error) {
+      console.error("Error starting recording:", error);
     }
   };
 
-  // Stop listening
-  const stopListening = () => {
-    if (!sttRef.current) return;
+  // Stop recording
+  const stopRecording = async (): Promise<Blob | null> => {
+    if (!recorderRef.current || !isRecording) return null;
 
     try {
-      console.log("Stopping Speechmatics STT...");
-      sttRef.current.stop();
+      console.log("🛑 Stopping recording...");
+      const audioBlob = await recorderRef.current.stop();
       setIsRecording(false);
-      setInterimTranscript("");
+      return audioBlob;
     } catch (error) {
-      console.error("Error stopping STT:", error);
+      console.error("Error stopping recording:", error);
+      setIsRecording(false);
+      return null;
     }
   };
 
@@ -309,14 +317,8 @@ const Interview = () => {
   };
 
   // Submit answer
-  const submitAnswer = () => {
-    console.log("🔘 Submit clicked", {
-      hasWs: !!ws,
-      answerLength: answer.length,
-      answerText: answer.substring(0, 50),
-      hasInterim: !!interimTranscript,
-      interimText: interimTranscript.substring(0, 50)
-    });
+  const submitAnswer = async () => {
+    console.log("🔘 Submit clicked");
 
     if (!ws) {
       console.error("❌ No WebSocket connection");
@@ -324,27 +326,31 @@ const Interview = () => {
       return;
     }
 
-    if (!answer.trim()) {
-      console.error("❌ No answer text");
-      alert("Please type or speak your answer first.");
+    // Stop recording and get audio
+    const audioBlob = await stopRecording();
+
+    if (!audioBlob || audioBlob.size === 0) {
+      console.error("❌ No audio recorded");
+      alert("No audio recorded. Please try again.");
       return;
     }
 
-    // Force finalize any interim transcript
-    if (interimTranscript) {
-      console.log("⏸️ Force finalizing interim transcript:", interimTranscript);
-      setAnswer((prev) => prev + " " + interimTranscript);
-      setInterimTranscript("");
-      // Don't return - continue with submission
-    }
+    // Convert audio to base64
+    const audioBase64 = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = (reader.result as string).split(",")[1];
+        resolve(base64);
+      };
+      reader.readAsDataURL(audioBlob);
+    });
 
-    // stop listening when submitting
-    stopListening();
+    console.log("📤 Audio recorded, size:", audioBlob.size, "bytes");
 
-    // set waiting state immediately
+    // Set waiting state
     setIsWaitingForResponse(true);
 
-    // get whiteboard canvas and convert to base64
+    // Get whiteboard canvas and convert to base64
     let whiteboardBase64 = null;
     const canvas = whiteboardRef.current?.getCanvas();
     if (canvas) {
@@ -352,28 +358,20 @@ const Interview = () => {
       whiteboardBase64 = dataURL.split(",")[1];
     }
 
-    // Send message with answer, code, and whiteboard
+    // Send message with audio, code, and whiteboard
     const messageType = isFollowup ? "followupAnswer" : "questionAnswer";
 
     ws.send(
       JSON.stringify({
         type: messageType,
-        content: answer,
+        audio: audioBase64,
+        audioMimeType: audioBlob.type,
         code: code || null,
         whiteboard: whiteboardBase64,
       }),
     );
 
-    console.log("📤 Sent " + messageType + " with:", {
-      answer: answer.substring(0, 50) + "...",
-      hasCode: !!code,
-      hasWhiteboard: !!whiteboardBase64,
-    });
-
-    // clear answer and interim immediately
-    setAnswer("");
-    setInterimTranscript("");
-    // Note: Not clearing code/whiteboard in case user wants to keep working on them
+    console.log("📤 Sent " + messageType + " with audio");
   };
 
   return (
@@ -476,12 +474,12 @@ const Interview = () => {
                 </div>
               )}
 
-              {/* Send Button Overlay */}
-              {answer.trim() && !interimTranscript && (
+              {/* Send Button Overlay - show when recording */}
+              {isRecording && !isSpeaking && (
                 <button
                   onClick={submitAnswer}
                   className="send-btn-overlay"
-                  disabled={isWaitingForResponse || !!interimTranscript}
+                  disabled={isWaitingForResponse}
                 >
                   <svg
                     className="send-icon"

@@ -10,9 +10,29 @@ import {
   isClarifyingQuestion,
   generateClarification,
 } from "../lib/clarification.js";
+import { textToSpeech } from "../lib/speechmatics.js";
+import { transcribeAudio } from "../lib/transcribe.js";
 
 const activeSessions = new Map(); // Initialising a new map when the server starts running which has all the activeSessions in here.
 const questionCache = new Map(); // cache generated questions by interview id to avoid excessive api calls
+
+// Helper: Send message with pre-generated TTS audio
+async function sendWithAudio(ws, message) {
+  const textToSpeak = message.question || message.followup?.question;
+  if (!textToSpeak) {
+    ws.send(JSON.stringify(message));
+    return;
+  }
+
+  try {
+    const audioBuffer = await textToSpeech(textToSpeak);
+    const audioBase64 = audioBuffer.toString('base64');
+    ws.send(JSON.stringify({ ...message, audio: audioBase64 }));
+  } catch (ttsError) {
+    console.error('TTS failed, sending without audio:', ttsError.message);
+    ws.send(JSON.stringify(message)); // Fallback without audio
+  }
+}
 
 // websocket functionality
 export default function setupWebSocketRoutes(app) {
@@ -97,13 +117,12 @@ export default function setupWebSocketRoutes(app) {
 
       const questionText = session.questions.questions[0].question;
 
-      // Send question text - frontend handles TTS via browser SpeechSynthesis
-      const firstQuestion = {
+      // Send question with pre-generated TTS audio
+      await sendWithAudio(ws, {
         type: "question",
         question: questionText,
         questionIndex: 1,
-      };
-      ws.send(JSON.stringify(firstQuestion));
+      });
 
       // WebSocket: message handling
 
@@ -127,27 +146,40 @@ export default function setupWebSocketRoutes(app) {
             ws.send(JSON.stringify({ type: "pong" }));
             return;
           } else if (message.type == "questionAnswer") {
+            // Transcribe audio if provided
+            let answerContent = message.content;
+            if (message.audio) {
+              try {
+                console.log("🎙️ Transcribing user audio...");
+                const audioBuffer = Buffer.from(message.audio, 'base64');
+                answerContent = await transcribeAudio(audioBuffer, message.audioMimeType);
+                console.log("✅ Transcribed answer:", answerContent.substring(0, 100));
+              } catch (error) {
+                console.error("❌ Transcription failed:", error.message);
+                ws.send(JSON.stringify({ type: "error", message: "Failed to transcribe audio" }));
+                return;
+              }
+            }
+
             // Check if this is a clarifying question
-            if (isClarifyingQuestion(message.content)) {
+            if (isClarifyingQuestion(answerContent)) {
               console.log(
                 "🤔 Detected clarifying question, generating clarification...",
               );
               const clarificationText = await generateClarification(
                 session.currentQuestionText,
-                message.content,
+                answerContent,
               );
 
               // Send clarification as a followup but don't move forward
-              ws.send(
-                JSON.stringify({
-                  type: "followup",
-                  followup: {
-                    question: clarificationText,
-                    isThisTheEnd: false,
-                    forWhatQuestion: session.currentQuestionIndex,
-                  },
-                }),
-              );
+              await sendWithAudio(ws, {
+                type: "followup",
+                followup: {
+                  question: clarificationText,
+                  isThisTheEnd: false,
+                  forWhatQuestion: session.currentQuestionIndex,
+                },
+              });
 
               return; // Don't process as actual answer
             }
@@ -158,8 +190,8 @@ export default function setupWebSocketRoutes(app) {
                 ?.question || "";
             session.questionAnswers.push({
               question: currentQuestion,
-              answer: message.content,
-              content: message.content,
+              answer: answerContent,
+              content: answerContent,
               code: message.code,
               whiteboard: message.whiteboard,
             });
@@ -170,7 +202,7 @@ export default function setupWebSocketRoutes(app) {
                 .question,
               [
                 {
-                  content: message.content,
+                  content: answerContent,
                   code: message.code,
                   whiteboard: message.whiteboard,
                 },
@@ -181,7 +213,7 @@ export default function setupWebSocketRoutes(app) {
             session.followupQuestions.push(followup.followup);
             session.currentQuestionText = followup.followup.followupQuestion; // Update current question
 
-            // Send followup with proper type for frontend
+            // Send followup with pre-generated TTS audio
             const followupMessage = {
               type: "followup",
               followup: {
@@ -191,36 +223,49 @@ export default function setupWebSocketRoutes(app) {
               },
             };
             console.log("Sending followup:", followupMessage);
-            ws.send(JSON.stringify(followupMessage));
+            await sendWithAudio(ws, followupMessage);
           } else if (message.type == "followupAnswer") {
+            // Transcribe audio if provided
+            let followupAnswerContent = message.content;
+            if (message.audio) {
+              try {
+                console.log("🎙️ Transcribing followup audio...");
+                const audioBuffer = Buffer.from(message.audio, 'base64');
+                followupAnswerContent = await transcribeAudio(audioBuffer, message.audioMimeType);
+                console.log("✅ Transcribed followup:", followupAnswerContent.substring(0, 100));
+              } catch (error) {
+                console.error("❌ Transcription failed:", error.message);
+                ws.send(JSON.stringify({ type: "error", message: "Failed to transcribe audio" }));
+                return;
+              }
+            }
+
             // Check if this is a clarifying question
-            if (isClarifyingQuestion(message.content)) {
+            if (isClarifyingQuestion(followupAnswerContent)) {
               console.log(
                 "🤔 Detected clarifying question, generating clarification...",
               );
               const clarificationText = await generateClarification(
                 session.currentQuestionText,
-                message.content,
+                followupAnswerContent,
               );
 
               // Send clarification without moving forward
-              ws.send(
-                JSON.stringify({
-                  type: "followup",
-                  followup: {
-                    question: clarificationText,
-                    isThisTheEnd: false,
-                    forWhatQuestion: session.currentQuestionIndex,
-                  },
-                }),
-              );
+              await sendWithAudio(ws, {
+                type: "followup",
+                followup: {
+                  question: clarificationText,
+                  isThisTheEnd: false,
+                  forWhatQuestion: session.currentQuestionIndex,
+                },
+              });
 
               return; // Don't process as actual answer
             }
 
             // Store the full followup answer with code and whiteboard
             session.followupAnswers.push({
-              content: message.content,
+              content: followupAnswerContent,
               code: message.code,
               whiteboard: message.whiteboard,
             });
@@ -244,14 +289,12 @@ export default function setupWebSocketRoutes(app) {
                     .question;
                 session.currentQuestionText = nextQuestionText; // Update current question
 
-                ws.send(
-                  JSON.stringify({
-                    type: "question",
-                    question: nextQuestionText,
-                    questionIndex: session.currentQuestionIndex,
-                    resetEditor: true, // Reset code and whiteboard for new main question
-                  }),
-                );
+                await sendWithAudio(ws, {
+                  type: "question",
+                  question: nextQuestionText,
+                  questionIndex: session.currentQuestionIndex,
+                  resetEditor: true, // Reset code and whiteboard for new main question
+                });
               } else {
                 // Interview is complete - save it and send result
                 const result = await closeInterview(
@@ -295,14 +338,12 @@ export default function setupWebSocketRoutes(app) {
                     .question;
                 session.currentQuestionText = nextQuestionText; // Update current question
 
-                ws.send(
-                  JSON.stringify({
-                    type: "question",
-                    question: nextQuestionText,
-                    questionIndex: session.currentQuestionIndex,
-                    resetEditor: true, // Reset code and whiteboard for new main question
-                  }),
-                );
+                await sendWithAudio(ws, {
+                  type: "question",
+                  question: nextQuestionText,
+                  questionIndex: session.currentQuestionIndex,
+                  resetEditor: true, // Reset code and whiteboard for new main question
+                });
               } else {
                 // Interview is complete - save it and send result
                 const result = await closeInterview(
@@ -322,7 +363,7 @@ export default function setupWebSocketRoutes(app) {
               session.followupQuestions.push(followup.followup);
               session.currentQuestionText = followup.followup.followupQuestion; // Update current question
 
-              // Send followup with proper type for frontend
+              // Send followup with pre-generated TTS audio
               const followupMessage = {
                 type: "followup",
                 followup: {
@@ -332,7 +373,7 @@ export default function setupWebSocketRoutes(app) {
                 },
               };
               console.log("Sending followup:", followupMessage);
-              ws.send(JSON.stringify(followupMessage));
+              await sendWithAudio(ws, followupMessage);
             }
           }
           // Session processing complete
