@@ -15,6 +15,7 @@ interface WhiteboardProps {
 
 export interface WhiteboardRef {
   getCanvas: () => HTMLCanvasElement | null;
+  hasContent: () => boolean;
   clear: () => void;
 }
 
@@ -37,6 +38,7 @@ export const Whiteboard = forwardRef<WhiteboardRef, WhiteboardProps>(
 
     useImperativeHandle(ref, () => ({
       getCanvas: () => canvasRef.current,
+      hasContent: () => lines.length > 0,
       clear: clearCanvas,
     }));
 

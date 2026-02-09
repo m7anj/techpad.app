@@ -174,11 +174,21 @@ const Interview = () => {
     let isCleanedUp = false;
     const socket = new WebSocket(wsUrl(`/interview/${sessionToken}`));
 
+    // Ping interval to keep WebSocket alive through Render's proxy
+    let pingInterval: ReturnType<typeof setInterval> | null = null;
+
     socket.onopen = () => {
       if (isCleanedUp) return;
       setIsConnected(true);
       setIsWaitingForResponse(true);
       console.log("WebSocket connection opened");
+
+      // Send ping every 30s to prevent idle timeout on Render's load balancer
+      pingInterval = setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ type: "ping" }));
+        }
+      }, 30000);
     };
 
     socket.onmessage = (event) => {
@@ -236,6 +246,12 @@ const Interview = () => {
       console.log("Disconnected from interview");
       setIsConnected(false);
 
+      // Clear ping interval
+      if (pingInterval) {
+        clearInterval(pingInterval);
+        pingInterval = null;
+      }
+
       // Stop TTS when disconnecting
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
@@ -265,6 +281,11 @@ const Interview = () => {
 
     return () => {
       isCleanedUp = true;
+      // Clear ping interval
+      if (pingInterval) {
+        clearInterval(pingInterval);
+        pingInterval = null;
+      }
       // Stop TTS when component unmounts
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
@@ -350,12 +371,14 @@ const Interview = () => {
     // Set waiting state
     setIsWaitingForResponse(true);
 
-    // Get whiteboard canvas and convert to base64
+    // Get whiteboard canvas and convert to base64 (only if user has drawn something)
     let whiteboardBase64 = null;
-    const canvas = whiteboardRef.current?.getCanvas();
-    if (canvas) {
-      const dataURL = canvas.toDataURL("image/png");
-      whiteboardBase64 = dataURL.split(",")[1];
+    if (whiteboardRef.current?.hasContent()) {
+      const canvas = whiteboardRef.current.getCanvas();
+      if (canvas) {
+        const dataURL = canvas.toDataURL("image/png");
+        whiteboardBase64 = dataURL.split(",")[1];
+      }
     }
 
     // Send message with audio, code, and whiteboard
