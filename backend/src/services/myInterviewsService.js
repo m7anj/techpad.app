@@ -51,7 +51,28 @@ async function addCompletedInterview(
       },
     });
 
-    console.log(`✅ Saved completed interview`);
+    // Decrement interviews allowed (floor at 0)
+    await prisma.user.update({
+      where: { clerkUserId },
+      data: {
+        numberOfInterviewsAllowed: {
+          decrement: 1,
+        },
+      },
+    });
+
+    // Ensure it doesn't go negative
+    await prisma.user.updateMany({
+      where: {
+        clerkUserId,
+        numberOfInterviewsAllowed: { lt: 0 },
+      },
+      data: {
+        numberOfInterviewsAllowed: 0,
+      },
+    });
+
+    console.log(`✅ Saved completed interview, decremented interviews allowed`);
     return completedInterview;
   } catch (error) {
     console.error("Error in addCompletedInterview:", error);
@@ -59,4 +80,34 @@ async function addCompletedInterview(
   }
 }
 
-export { getCompletedInterviewsByUserId, addCompletedInterview };
+async function getCompletedInterviewById(id, clerkUserId) {
+  const completedInterview = await prisma.completedInterview.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      interviewId: true,
+      timeTaken: true,
+      score: true,
+      feedback: true,
+      completedAt: true,
+      clerkUserId: true,
+      interview: {
+        select: {
+          type: true,
+          topic: true,
+          difficulty: true,
+        },
+      },
+    },
+  });
+
+  if (!completedInterview || completedInterview.clerkUserId !== clerkUserId) {
+    return null;
+  }
+
+  // Remove clerkUserId from response
+  const { clerkUserId: _, ...result } = completedInterview;
+  return result;
+}
+
+export { getCompletedInterviewsByUserId, addCompletedInterview, getCompletedInterviewById };

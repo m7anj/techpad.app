@@ -35,6 +35,14 @@ export const Navbar = ({ onNavigate }: NavbarProps = {}) => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  // Reset hasFetched when cache is cleared (e.g., after interview completion)
+  const cachedUserData = getCache<any>("userData");
+  useEffect(() => {
+    if (!cachedUserData && hasFetched) {
+      setHasFetched(false);
+    }
+  }, [cachedUserData]);
+
   useEffect(() => {
     if (!user || hasFetched) return;
 

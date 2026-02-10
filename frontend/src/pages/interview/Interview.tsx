@@ -6,11 +6,13 @@ import { wsUrl } from "../../lib/api";
 import "./Interview.css";
 import { Whiteboard, WhiteboardRef } from "../../components/Whiteboard";
 import { Navbar } from "../../components/Navbar";
+import { useCache } from "../../contexts/CacheContext";
 import { AudioRecorder } from "../../lib/speechmatics";
 
 const Interview = () => {
   const { id: sessionToken } = useParams();
   const navigate = useNavigate();
+  const { clearCache } = useCache();
 
   const recorderRef = useRef<AudioRecorder | null>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -229,6 +231,9 @@ const Interview = () => {
         setCurrentQuestion("Interview complete! Saving  your results...");
         setIsFollowup(false);
         setIsWaitingForResponse(false);
+
+        // Clear cached user data so Navbar refetches (updated interview count)
+        clearCache("userData");
 
         // Navigate to results page with the result ID
         setTimeout(() => {

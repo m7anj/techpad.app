@@ -21,6 +21,7 @@ async function getUserByIdHandler(req, res) {
     const dbUser = await prisma.user.findUnique({
       where: { clerkUserId },
       select: {
+        role: true,
         numberOfInterviewsAllowed: true,
         subscriptionStatus: true,
         subscriptionEndsAt: true,
@@ -32,7 +33,8 @@ async function getUserByIdHandler(req, res) {
     // Determine plan based on subscription status from database
     const isPro = dbUser?.subscriptionStatus === "active";
     const plan = isPro ? "pro_monthly" : "free";
-    const role = isPro ? "pro" : "free";
+    // Role comes from the database — "free", "pro", "admin", or "owner"
+    const role = dbUser?.role || (isPro ? "pro" : "free");
 
     // return user info - ALL subscription data comes from database
     const user = {

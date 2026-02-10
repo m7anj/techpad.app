@@ -12,6 +12,7 @@ model User {
   clerkUserId               String    @unique
   email                     String?
   username                  String?   @unique
+  role                      String    @default("free")
   elo                       Int       @default(200)
   numberOfInterviewsAllowed Int       @default(3)
   subscriptionStatus        String    @default("free")
