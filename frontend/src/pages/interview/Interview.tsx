@@ -14,6 +14,7 @@ const Interview = () => {
 
   const recorderRef = useRef<AudioRecorder | null>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const pendingTextRef = useRef<string | null>(null);
 
   // WebSocket connection
   const [ws, setWs] = useState<WebSocket | null>(null);
@@ -30,9 +31,9 @@ const Interview = () => {
   // Browser TTS state
   const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // Text-to-Speech - plays pre-generated audio or falls back to browser TTS
-  const speakText = async (text: string, audioBase64?: string) => {
-    console.log("🔊 TTS: Starting speech for text length:", text.length);
+  // Play Speechmatics WAV audio via Audio element
+  const speakText = async (audioBase64: string) => {
+    console.log("🔊 TTS: Playing Speechmatics audio");
 
     // Stop any ongoing speech
     if (currentAudioRef.current) {
@@ -43,62 +44,49 @@ const Interview = () => {
     setIsSpeaking(true);
     setIsWaitingForResponse(false);
 
-    const onAudioEnd = () => {
-      console.log("✅ TTS: Finished playing");
-      setIsSpeaking(false);
-      currentAudioRef.current = null;
-      // Start recording after TTS finishes
-      setTimeout(() => startRecording(), 100);
-    };
-
-    const onAudioError = () => {
-      console.error("❌ TTS playback error");
-      setIsSpeaking(false);
-      currentAudioRef.current = null;
-      // Still start recording even if TTS fails
-      setTimeout(() => startRecording(), 100);
-    };
-
-    // If pre-generated audio is provided, play it directly (no API call needed)
-    if (audioBase64) {
-      try {
-        console.log("▶️ TTS: Playing pre-generated audio...");
-        const audioBlob = new Blob(
-          [Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0))],
-          { type: 'audio/mpeg' }
-        );
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        currentAudioRef.current = audio;
-
-        audio.onended = onAudioEnd;
-        audio.onerror = onAudioError;
-
-        await audio.play();
-        console.log("▶️ TTS: Audio is playing");
-        return;
-      } catch (error) {
-        console.error("❌ Error playing pre-generated audio:", error);
-        // Fall through to browser TTS
-      }
-    }
-
-    // Fallback: Use browser's built-in speech synthesis (instant, no API call)
     try {
-      console.log("🔊 TTS: Using browser speech synthesis...");
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
+      const audioBlob = new Blob(
+        [Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0))],
+        { type: 'audio/wav' }
+      );
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      currentAudioRef.current = audio;
 
-      utterance.onend = onAudioEnd;
-      utterance.onerror = onAudioError;
+      audio.onended = () => {
+        console.log("✅ TTS: Finished playing");
+        setIsSpeaking(false);
+        currentAudioRef.current = null;
+        setTimeout(() => startRecording(), 100);
+      };
 
-      speechSynthesis.speak(utterance);
-      console.log("▶️ TTS: Browser speech started");
+      audio.onerror = () => {
+        console.error("❌ TTS playback error");
+        setIsSpeaking(false);
+        currentAudioRef.current = null;
+        setTimeout(() => startRecording(), 100);
+      };
+
+      await audio.play();
     } catch (error) {
-      console.error("❌ Error with browser TTS:", error);
+      console.error("❌ Error playing audio:", error);
       setIsSpeaking(false);
       setTimeout(() => startRecording(), 100);
+    }
+  };
+
+  // Handle incoming text: play audio if provided, otherwise wait for separate audio message
+  const handleIncomingText = (audioBase64?: string) => {
+    pendingTextRef.current = null;
+
+    if (audioBase64) {
+      // Audio included inline — play immediately
+      speakText(audioBase64);
+    } else {
+      // Audio will arrive as separate 'audio' message — wait for Speechmatics
+      pendingTextRef.current = "waiting";
+      setIsSpeaking(true);
+      setIsWaitingForResponse(false);
     }
   };
 
@@ -193,7 +181,7 @@ const Interview = () => {
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("Received:", data);
+      if (data.type !== "pong") console.log("Received:", data.type, data.type === "audio" ? "(audio data)" : data);
 
       if (data.type === "error") {
         console.error("Interview error:", data.message);
@@ -206,7 +194,6 @@ const Interview = () => {
         setIsConnected(true);
         setCurrentQuestion(data.question);
         setIsFollowup(false);
-        setIsWaitingForResponse(false);
 
         // Reset code and whiteboard for new main question
         if (data.resetEditor) {
@@ -216,18 +203,30 @@ const Interview = () => {
           }
         }
 
-        // Speak the question - recording starts when speech ends
-        speakText(data.question, data.audio);
+        handleIncomingText(data.audio);
       } else if (data.type === "followup") {
         setCurrentQuestion(data.followup.question);
         setIsFollowup(true);
-        setIsWaitingForResponse(false);
 
-        // Speak the followup - recording starts when speech ends
-        speakText(data.followup.question, data.audio);
+        handleIncomingText(data.audio);
+      } else if (data.type === "audio") {
+        // Separate audio message — arrives after text when TTS wasn't cached
+        if (pendingTextRef.current) {
+          console.log("▶️ TTS audio arrived, playing Speechmatics voice");
+          pendingTextRef.current = null;
+          speakText(data.audio);
+        }
+      } else if (data.type === "audioFailed") {
+        // TTS generation failed on backend — skip audio, start recording
+        if (pendingTextRef.current) {
+          console.log("⚠️ TTS failed on server, skipping audio");
+          pendingTextRef.current = null;
+          setIsSpeaking(false);
+          setTimeout(() => startRecording(), 100);
+        }
       } else if (data.type === "interviewComplete") {
         setIsCompleting(true);
-        setCurrentQuestion("Interview complete! Saving your results...");
+        setCurrentQuestion("Interview complete! Saving  your results...");
         setIsFollowup(false);
         setIsWaitingForResponse(false);
 
@@ -251,6 +250,8 @@ const Interview = () => {
         clearInterval(pingInterval);
         pingInterval = null;
       }
+
+      pendingTextRef.current = null;
 
       // Stop TTS when disconnecting
       if (currentAudioRef.current) {
@@ -281,12 +282,11 @@ const Interview = () => {
 
     return () => {
       isCleanedUp = true;
-      // Clear ping interval
       if (pingInterval) {
         clearInterval(pingInterval);
         pingInterval = null;
       }
-      // Stop TTS when component unmounts
+      pendingTextRef.current = null;
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
         currentAudioRef.current = null;

@@ -1,4 +1,3 @@
-import express from "express";
 import {
   setupInterview,
   validateInterviewSession,
@@ -16,21 +15,38 @@ import { transcribeAudio } from "../lib/transcribe.js";
 const activeSessions = new Map(); // Initialising a new map when the server starts running which has all the activeSessions in here.
 const questionCache = new Map(); // cache generated questions by interview id to avoid excessive api calls
 
-// Helper: Send message with pre-generated TTS audio
+// TTS audio cache: keyed by question text → base64 WAV audio
+const ttsAudioCache = new Map();
+
+// Helper: Send text immediately (with cached audio if available), generate audio in background otherwise
 async function sendWithAudio(ws, message) {
   const textToSpeak = message.question || message.followup?.question;
-  if (!textToSpeak) {
+
+  // If audio is already cached, include it inline with the message
+  if (textToSpeak && ttsAudioCache.has(textToSpeak)) {
+    message.audio = ttsAudioCache.get(textToSpeak);
     ws.send(JSON.stringify(message));
     return;
   }
 
+  // Send text immediately so frontend can display it without waiting for TTS
+  ws.send(JSON.stringify(message));
+
+  if (!textToSpeak) return;
+
+  // Generate TTS in background, send as separate message when ready
   try {
     const audioBuffer = await textToSpeech(textToSpeak);
     const audioBase64 = audioBuffer.toString('base64');
-    ws.send(JSON.stringify({ ...message, audio: audioBase64 }));
-  } catch (ttsError) {
-    console.error('TTS failed, sending without audio:', ttsError.message);
-    ws.send(JSON.stringify(message)); // Fallback without audio
+    ttsAudioCache.set(textToSpeak, audioBase64);
+    if (ws.readyState === ws.OPEN) {
+      ws.send(JSON.stringify({ type: 'audio', audio: audioBase64 }));
+    }
+  } catch (err) {
+    console.error('TTS generation failed:', err.message);
+    if (ws.readyState === ws.OPEN) {
+      ws.send(JSON.stringify({ type: 'audioFailed' }));
+    }
   }
 }
 
@@ -93,7 +109,30 @@ export default function setupWebSocketRoutes(app) {
         );
       }
       console.log("✅ Questions ready");
-      console.log("Questions: " + JSON.stringify(questions, null, 2));
+
+      // Pre-generate TTS for Q1 (await it so first question always has audio)
+      const allQuestionTexts = questions.questions.map(q => q.question);
+      try {
+        const q1Audio = await textToSpeech(allQuestionTexts[0]);
+        ttsAudioCache.set(allQuestionTexts[0], q1Audio.toString('base64'));
+        console.log(`🔊 Pre-generated TTS for Q1`);
+      } catch (e) {
+        console.error(`TTS pre-gen failed for Q1: ${e.message}`);
+      }
+
+      // Pre-generate TTS for remaining questions in the background (non-blocking)
+      Promise.allSettled(
+        allQuestionTexts.slice(1).map(async (text) => {
+          if (ttsAudioCache.has(text)) return;
+          try {
+            const audio = await textToSpeech(text);
+            ttsAudioCache.set(text, audio.toString('base64'));
+            console.log(`🔊 Pre-generated TTS for: "${text.substring(0, 50)}..."`);
+          } catch (e) {
+            console.error(`TTS pre-gen failed: ${e.message}`);
+          }
+        })
+      );
 
       activeSessions.set(sessionId, {
         // Creating a hashmap entry in activeSessions{} for the session's data
@@ -112,12 +151,11 @@ export default function setupWebSocketRoutes(app) {
       //  we add to it from this point on. we don't directly change the hashmap's entry, we can save
       //  the data in a variable and then change it.
 
-      // WebSocket: immediately send first question on connection
+      // Send first question text immediately, then stream TTS audio
       console.log(`✅ Session created successfully. Sending first question.`);
 
       const questionText = session.questions.questions[0].question;
 
-      // Send question with pre-generated TTS audio
       await sendWithAudio(ws, {
         type: "question",
         question: questionText,

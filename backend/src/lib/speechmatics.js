@@ -3,13 +3,12 @@ import WebSocket from 'ws';
 const SPEECHMATICS_API_KEY = process.env.SPEECHMATICS_API_KEY;
 const SPEECHMATICS_TTS_BASE_URL = 'https://preview.tts.speechmatics.com/generate';
 const SPEECHMATICS_STT_URL = 'wss://eu2.rt.speechmatics.com/v2';
-const SPEECHMATICS_BATCH_URL = 'https://asr.api.speechmatics.com/v2/jobs';
 
 /**
- * Convert text to speech using Speechmatics TTS API
+ * Convert text to speech using Speechmatics TTS API (non-streaming, full buffer)
  * @param {string} text - Text to convert to speech
  * @param {string} voice - Voice name (default: 'sarah')
- * @returns {Promise<Buffer>} - Audio buffer in MP3 format
+ * @returns {Promise<Buffer>} - Audio buffer in WAV format
  */
 export async function textToSpeech(text, voice = 'sarah') {
   try {
