@@ -613,6 +613,49 @@
 }
 
 /* ============================================
+   ELO BADGES
+   ============================================ */
+
+.my-interviews .elo-badge {
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-left: 0.5rem;
+}
+
+.my-interviews .elo-badge.elo-positive {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+}
+
+.my-interviews .elo-badge.elo-negative {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.my-interviews .elo-badge-large {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    margin-top: 0.25rem;
+}
+
+.my-interviews .elo-badge-large.elo-positive {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.my-interviews .elo-badge-large.elo-negative {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+/* ============================================
    LOADING & EMPTY STATES
    ============================================ */
 

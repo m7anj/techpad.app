@@ -96,6 +96,7 @@ async function getUserByUsernameHandler(req, res) {
         score: true,
         timeTaken: true,
         completedAt: true,
+        feedback: true,
         interview: {
           select: {
             type: true,

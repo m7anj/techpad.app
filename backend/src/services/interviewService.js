@@ -102,13 +102,24 @@ async function closeInterview(interviewId, session, clerkUserId) {
     const interview = await getExplorePresetById(interviewId);
     const expectedDuration = interview?.expectedDuration || 0;
 
+    // Fetch user's current ELO for scoring calibration
+    const user = await prisma.user.findUnique({
+      where: { clerkUserId },
+      select: { elo: true },
+    });
+    const currentElo = user?.elo ?? 200;
+
     const feedback = await generateInterviewScore(
       session.questionAnswers,
       "Technical Interview",
       timeTaken,
       expectedDuration,
+      currentElo,
     );
     const overallScore = feedback.overallScore;
+    const eloChange = typeof feedback.eloChange === "number"
+      ? Math.max(-30, Math.min(30, Math.round(feedback.eloChange)))
+      : 0;
 
     console.log(`📊 Interview Summary:`);
     console.log(`   - User: ${clerkUserId}`);
@@ -118,14 +129,16 @@ async function closeInterview(interviewId, session, clerkUserId) {
       `   - Time Taken: ${timeTaken}s (${Math.floor(timeTaken / 60)}m ${timeTaken % 60}s)`,
     );
     console.log(`   - Score: ${overallScore}%`);
+    console.log(`   - ELO Change: ${eloChange >= 0 ? "+" : ""}${eloChange} (${currentElo} → ${currentElo + eloChange})`);
 
     const result = await addCompletedInterview(
-      clerkUserId, // now using actual authenticated user id
+      clerkUserId,
       interviewId,
       session.questionAnswers,
       timeTaken,
       overallScore,
       feedback,
+      eloChange,
     );
 
     if (result) {

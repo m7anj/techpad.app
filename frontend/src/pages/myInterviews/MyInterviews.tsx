@@ -12,6 +12,7 @@ interface Interview {
   completedAt: Date;
   duration: number;
   score?: number;
+  eloChange?: number;
   feedback?: {
     breakdown?: {
       technical: number;
@@ -232,6 +233,13 @@ const MyInterviews = () => {
                                 N/A
                               </span>
                             )}
+                            {interview.eloChange != null && interview.eloChange !== 0 && (
+                              <span
+                                className={`elo-badge ${interview.eloChange > 0 ? "elo-positive" : "elo-negative"}`}
+                              >
+                                {interview.eloChange > 0 ? "+" : ""}{interview.eloChange}
+                              </span>
+                            )}
                           </div>
                           <div className="td-lock">
                             <svg
@@ -377,6 +385,13 @@ const MyInterviews = () => {
                         {selectedInterview.score}%
                       </div>
                       <span className="score-label">Overall Score</span>
+                      {selectedInterview.eloChange != null && selectedInterview.eloChange !== 0 && (
+                        <span
+                          className={`elo-badge-large ${selectedInterview.eloChange > 0 ? "elo-positive" : "elo-negative"}`}
+                        >
+                          {selectedInterview.eloChange > 0 ? "+" : ""}{selectedInterview.eloChange} ELO
+                        </span>
+                      )}
                     </div>
 
                     <div className="breakdown-bars">

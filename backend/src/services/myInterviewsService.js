@@ -12,6 +12,7 @@ async function getCompletedInterviewsByUserId(clerkUserId) {
       timeTaken: true,
       score: true,
       feedback: true,
+      eloChange: true,
       completedAt: true,
       interview: {
         select: {
@@ -39,6 +40,7 @@ async function addCompletedInterview(
   timeTaken,
   score,
   feedback,
+  eloChange,
 ) {
   try {
     const completedInterview = await prisma.completedInterview.create({
@@ -48,6 +50,7 @@ async function addCompletedInterview(
         timeTaken: timeTaken || 0,
         score,
         feedback,
+        eloChange: eloChange ?? null,
       },
     });
 
@@ -72,7 +75,30 @@ async function addCompletedInterview(
       },
     });
 
-    console.log(`✅ Saved completed interview, decremented interviews allowed`);
+    // Update user ELO
+    if (typeof eloChange === "number" && eloChange !== 0) {
+      await prisma.user.update({
+        where: { clerkUserId },
+        data: {
+          elo: {
+            increment: eloChange,
+          },
+        },
+      });
+
+      // Floor ELO at 0
+      await prisma.user.updateMany({
+        where: {
+          clerkUserId,
+          elo: { lt: 0 },
+        },
+        data: {
+          elo: 0,
+        },
+      });
+    }
+
+    console.log(`✅ Saved completed interview, decremented interviews allowed, ELO change: ${eloChange ?? 0}`);
     return completedInterview;
   } catch (error) {
     console.error("Error in addCompletedInterview:", error);
@@ -89,6 +115,7 @@ async function getCompletedInterviewById(id, clerkUserId) {
       timeTaken: true,
       score: true,
       feedback: true,
+      eloChange: true,
       completedAt: true,
       clerkUserId: true,
       interview: {

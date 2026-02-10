@@ -7,20 +7,33 @@ import { apiUrl } from "../../lib/api";
 import "../../styles/shared-layout.css";
 import "./UserProfile.css";
 
+interface CompletedInterview {
+  id: string;
+  score: number | null;
+  timeTaken: number;
+  completedAt: string;
+  feedback: {
+    overallScore?: number;
+    breakdown?: {
+      technical: number;
+      problemSolving: number;
+      communication: number;
+    };
+    strengths?: string[];
+    gaps?: string[];
+    improvement?: string[];
+  } | null;
+  interview: {
+    type: string;
+    topic: string | null;
+    difficulty: string;
+  };
+}
+
 interface UserStats {
   totalInterviews: number;
   averageScore: string;
-  interviewsCompleted: Array<{
-    id: string;
-    score: number | null;
-    timeTaken: number;
-    completedAt: string;
-    interview: {
-      type: string;
-      topic: string | null;
-      difficulty: string;
-    };
-  }>;
+  interviewsCompleted: CompletedInterview[];
 }
 
 interface UserProfile {
@@ -49,6 +62,9 @@ const UserProfile = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [subscriptionMessage, setSubscriptionMessage] = useState<string | null>(null);
+
+  // Result modal state
+  const [selectedInterview, setSelectedInterview] = useState<CompletedInterview | null>(null);
 
   const isOwnProfile = user?.username === username;
 
@@ -261,7 +277,44 @@ const UserProfile = () => {
     return allDates;
   };
 
+  const getDifficultyBreakdown = () => {
+    if (!profile) return { easy: 0, medium: 0, hard: 0, total: 0 };
+    const counts = { easy: 0, medium: 0, hard: 0 };
+    profile.stats.interviewsCompleted.forEach((interview) => {
+      const diff = interview.interview.difficulty.toLowerCase();
+      if (diff === "easy") counts.easy++;
+      else if (diff === "medium") counts.medium++;
+      else if (diff === "hard") counts.hard++;
+    });
+    return { ...counts, total: counts.easy + counts.medium + counts.hard };
+  };
+
   const heatmapData = generateHeatmapData();
+  const diffBreakdown = getDifficultyBreakdown();
+
+  const getHeatmapMonthLabels = () => {
+    if (heatmapData.length === 0) return [];
+    const labels: { month: string; colIndex: number }[] = [];
+    let currentMonth = -1;
+    let colIndex = 0;
+
+    for (let i = 0; i < heatmapData.length; i++) {
+      const d = new Date(heatmapData[i].date);
+      const dayOfWeek = d.getDay();
+      if (dayOfWeek === 0 && i > 0) colIndex++;
+      if (d.getMonth() !== currentMonth) {
+        currentMonth = d.getMonth();
+        labels.push({
+          month: d.toLocaleDateString("en-US", { month: "short" }),
+          colIndex,
+        });
+      }
+    }
+    return labels;
+  };
+
+  const monthLabels = getHeatmapMonthLabels();
+  const totalSubmissions = heatmapData.reduce((sum, d) => sum + d.count, 0);
 
   if (loading) {
     return (
@@ -534,58 +587,92 @@ const UserProfile = () => {
             </div>
           )}
 
-          {/* Stats Section */}
+          {/* Stats Section — Donut Chart + Green Heatmap */}
           <div className="stats-activity-row">
-            <div className="stats-section">
-              <h2>Statistics</h2>
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <div className="stat-value">
-                    {profile.stats.totalInterviews}
-                  </div>
-                  <div className="stat-label">Total Interviews</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value">
-                    {profile.stats.averageScore}%
-                  </div>
-                  <div className="stat-label">Average Score</div>
+            {/* Donut Chart */}
+            <div className="donut-card">
+              <div className="donut-left">
+                <div className="donut-chart-wrapper">
+                  <svg className="donut-svg" viewBox="0 0 200 200">
+                    <circle
+                      cx="100" cy="100" r="80"
+                      fill="none"
+                      stroke="rgba(255,255,255,0.06)"
+                      strokeWidth="12"
+                    />
+                    {(() => {
+                      const total = diffBreakdown.total || 1;
+                      const circumference = 2 * Math.PI * 80;
+                      const segments = [
+                        { count: diffBreakdown.easy, color: "#4ade80" },
+                        { count: diffBreakdown.medium, color: "#fbbf24" },
+                        { count: diffBreakdown.hard, color: "#f87171" },
+                      ];
+                      let offset = circumference * 0.25;
+                      return segments.map((seg, i) => {
+                        const dash = (seg.count / total) * circumference;
+                        const el = (
+                          <circle
+                            key={i}
+                            cx="100" cy="100" r="80"
+                            fill="none"
+                            stroke={seg.count > 0 ? seg.color : "transparent"}
+                            strokeWidth="12"
+                            strokeDasharray={`${dash} ${circumference - dash}`}
+                            strokeDashoffset={offset}
+                            style={{ transition: "stroke-dasharray 0.6s ease, stroke-dashoffset 0.6s ease" }}
+                          />
+                        );
+                        offset -= dash;
+                        return el;
+                      });
+                    })()}
+                    <text x="100" y="95" textAnchor="middle" className="donut-count">
+                      {diffBreakdown.total}
+                    </text>
+                    <text x="100" y="118" textAnchor="middle" className="donut-label">
+                      Solved
+                    </text>
+                  </svg>
                 </div>
               </div>
+              <div className="difficulty-breakdown">
+                {[
+                  { label: "Easy", count: diffBreakdown.easy, color: "#4ade80" },
+                  { label: "Medium", count: diffBreakdown.medium, color: "#fbbf24" },
+                  { label: "Hard", count: diffBreakdown.hard, color: "#f87171" },
+                ].map((d) => (
+                  <div className="diff-row" key={d.label}>
+                    <span className="diff-label" style={{ color: d.color }}>{d.label}</span>
+                    <div className="diff-row-bar-wrapper">
+                      <div
+                        className="diff-row-bar"
+                        style={{
+                          width: diffBreakdown.total > 0 ? `${(d.count / diffBreakdown.total) * 100}%` : "0%",
+                          background: d.color,
+                        }}
+                      />
+                    </div>
+                    <span className="diff-count">{d.count}/{diffBreakdown.total}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            {/* Activity Heatmap */}
+
+            {/* Green Activity Heatmap */}
             <div className="heatmap-section">
-              <h2>Activity</h2>
+              <h2>{totalSubmissions} submission{totalSubmissions !== 1 ? "s" : ""} in the last year</h2>
               <div className="heatmap-container">
                 {heatmapData.length > 0 ? (
                   <div className="github-heatmap">
-                    <div className="heatmap-months">
-                      {Array.from({ length: 12 }).map((_, i) => {
-                        const monthDate = new Date();
-                        monthDate.setMonth(monthDate.getMonth() - (11 - i));
-                        return (
-                          <div key={i} className="month-label">
-                            {monthDate.toLocaleDateString("en-US", {
-                              month: "short",
-                            })}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="heatmap-wrapper">
-                      <div className="heatmap-days">
-                        <span>Mon</span>
-                        <span>Wed</span>
-                        <span>Fri</span>
-                      </div>
+                    <div className="heatmap-grid-wrapper">
                       <div className="heatmap-grid">
                         {heatmapData.map((day, index) => {
                           const getColor = (count: number) => {
                             if (count === 0) return "rgba(255, 255, 255, 0.05)";
-                            if (count === 1) return "rgba(139, 92, 246, 0.3)";
-                            if (count === 2) return "rgba(139, 92, 246, 0.5)";
-                            if (count >= 3) return "rgba(139, 92, 246, 0.8)";
-                            return "rgba(139, 92, 246, 1)";
+                            if (count === 1) return "rgba(34, 197, 94, 0.3)";
+                            if (count === 2) return "rgba(34, 197, 94, 0.5)";
+                            return "rgba(34, 197, 94, 0.8)";
                           };
 
                           return (
@@ -602,29 +689,24 @@ const UserProfile = () => {
                           );
                         })}
                       </div>
+                      <div className="heatmap-months-bottom">
+                        {monthLabels.map((m, i) => (
+                          <span
+                            key={i}
+                            className="month-label"
+                            style={{ gridColumn: m.colIndex + 1 }}
+                          >
+                            {m.month}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                     <div className="heatmap-legend">
                       <span>Less</span>
-                      <div
-                        className="legend-cell"
-                        style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}
-                      />
-                      <div
-                        className="legend-cell"
-                        style={{ backgroundColor: "rgba(139, 92, 246, 0.3)" }}
-                      />
-                      <div
-                        className="legend-cell"
-                        style={{ backgroundColor: "rgba(139, 92, 246, 0.5)" }}
-                      />
-                      <div
-                        className="legend-cell"
-                        style={{ backgroundColor: "rgba(139, 92, 246, 0.8)" }}
-                      />
-                      <div
-                        className="legend-cell"
-                        style={{ backgroundColor: "rgba(139, 92, 246, 1)" }}
-                      />
+                      <div className="legend-cell" style={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }} />
+                      <div className="legend-cell" style={{ backgroundColor: "rgba(34, 197, 94, 0.3)" }} />
+                      <div className="legend-cell" style={{ backgroundColor: "rgba(34, 197, 94, 0.5)" }} />
+                      <div className="legend-cell" style={{ backgroundColor: "rgba(34, 197, 94, 0.8)" }} />
                       <span>More</span>
                     </div>
                   </div>
@@ -639,41 +721,155 @@ const UserProfile = () => {
           <div className="recent-interviews-section">
             <h2>Recent Interviews</h2>
             {profile.stats.interviewsCompleted.length > 0 ? (
-              <div className="interviews-list">
+              <div className="recent-table">
                 {profile.stats.interviewsCompleted
                   .slice(0, 10)
-                  .map((interview) => (
-                    <div key={interview.id} className="interview-item">
-                      <div className="interview-details">
-                        <h3>{interview.interview.type}</h3>
-                        {interview.interview.topic && (
-                          <p className="interview-topic">
-                            {interview.interview.topic}
-                          </p>
-                        )}
-                      </div>
-                      <div className="interview-stats">
-                        <span
-                          className={`difficulty-pill ${interview.interview.difficulty.toLowerCase()}`}
-                        >
-                          {interview.interview.difficulty}
-                        </span>
-                        {interview.score !== null && (
-                          <span className="score-badge">
-                            Score: {interview.score}%
+                  .map((interview) => {
+                    const mins = Math.floor(interview.timeTaken / 60);
+                    const secs = interview.timeTaken % 60;
+                    const daysAgo = Math.floor(
+                      (Date.now() - new Date(interview.completedAt).getTime()) / (1000 * 60 * 60 * 24)
+                    );
+                    const timeAgo =
+                      daysAgo === 0 ? "today" : daysAgo === 1 ? "yesterday" : `${daysAgo} days ago`;
+
+                    return (
+                      <div
+                        key={interview.id}
+                        className="recent-row"
+                        onClick={() => setSelectedInterview(interview)}
+                      >
+                        <div className="recent-row-left">
+                          <div className="recent-title-group">
+                            <span className="recent-title">{interview.interview.type}</span>
+                            {interview.interview.topic && (
+                              <span className="recent-topic">{interview.interview.topic}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="recent-row-right">
+                          {interview.score !== null && (
+                            <span className="recent-score">{Math.round(interview.score)}%</span>
+                          )}
+                          <span className="recent-time">{mins}m {secs}s</span>
+                          <span className={`difficulty-pill ${interview.interview.difficulty.toLowerCase()}`}>
+                            {interview.interview.difficulty}
                           </span>
-                        )}
-                        <span className="date-badge">
-                          {new Date(interview.completedAt).toLocaleDateString()}
-                        </span>
+                          <span className="recent-ago">{timeAgo}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             ) : (
               <p className="no-interviews">No interviews completed yet</p>
             )}
           </div>
+
+          {/* Result Detail Modal */}
+          {selectedInterview && (() => {
+            const fb = selectedInterview.feedback;
+            const score = selectedInterview.score;
+            const mins = Math.floor(selectedInterview.timeTaken / 60);
+            const secs = selectedInterview.timeTaken % 60;
+            const scoreColor = score !== null
+              ? score >= 80 ? "#4ade80" : score >= 60 ? "#fbbf24" : "#f87171"
+              : "#64748b";
+
+            return (
+              <div className="modal-overlay" onClick={() => setSelectedInterview(null)}>
+                <div className="result-modal" onClick={(e) => e.stopPropagation()}>
+                  <button className="result-modal-close" onClick={() => setSelectedInterview(null)}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+
+                  {/* Header */}
+                  <div className="result-modal-header">
+                    <div className="result-modal-title-row">
+                      <div>
+                        <h2>{selectedInterview.interview.type}</h2>
+                        {selectedInterview.interview.topic && (
+                          <p className="result-modal-topic">{selectedInterview.interview.topic}</p>
+                        )}
+                      </div>
+                      <div className="result-modal-meta">
+                        <span className={`difficulty-pill ${selectedInterview.interview.difficulty.toLowerCase()}`}>
+                          {selectedInterview.interview.difficulty}
+                        </span>
+                        <span className="result-modal-time">{mins}m {secs}s</span>
+                      </div>
+                    </div>
+
+                    {/* Score */}
+                    {score !== null && (
+                      <div className="result-modal-score" style={{ color: scoreColor }}>
+                        {Math.round(score)}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Breakdown bars */}
+                  {fb?.breakdown && (
+                    <div className="result-breakdown">
+                      {([
+                        ["Technical", fb.breakdown.technical],
+                        ["Problem Solving", fb.breakdown.problemSolving],
+                        ["Communication", fb.breakdown.communication],
+                      ] as const).map(([label, val]) => (
+                        <div className="result-breakdown-row" key={label}>
+                          <span className="result-breakdown-label">{label}</span>
+                          <div className="result-breakdown-track">
+                            <div
+                              className="result-breakdown-fill"
+                              style={{
+                                width: `${val}%`,
+                                background: val >= 80 ? "#4ade80" : val >= 60 ? "#fbbf24" : "#f87171",
+                              }}
+                            />
+                          </div>
+                          <span className="result-breakdown-val">{val}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Feedback sections */}
+                  {fb?.strengths && fb.strengths.length > 0 && (
+                    <div className="result-feedback-group">
+                      <h3>Strengths</h3>
+                      <ul>
+                        {fb.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                      </ul>
+                    </div>
+                  )}
+
+                  {fb?.gaps && fb.gaps.length > 0 && (
+                    <div className="result-feedback-group">
+                      <h3>Gaps</h3>
+                      <ul>
+                        {fb.gaps.map((g, i) => <li key={i}>{g}</li>)}
+                      </ul>
+                    </div>
+                  )}
+
+                  {fb?.improvement && fb.improvement.length > 0 && (
+                    <div className="result-feedback-group">
+                      <h3>What to work on</h3>
+                      <ul>
+                        {fb.improvement.map((item, i) => <li key={i}>{item}</li>)}
+                      </ul>
+                    </div>
+                  )}
+
+                  {!fb && (
+                    <p className="result-no-feedback">No feedback available for this interview.</p>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </main>
     </div>

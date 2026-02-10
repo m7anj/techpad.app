@@ -34,6 +34,7 @@ model completedInterview {
   completedAt DateTime  @default(now())
   clerkUserId String
   feedback    Json?
+  eloChange   Int?
   interview   Interview @relation(fields: [interviewId], references: [id])
 
   @@index([clerkUserId])

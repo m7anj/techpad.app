@@ -11,6 +11,7 @@ interface InterviewResult {
   interviewId: string;
   timeTaken: number;
   score: number | null;
+  eloChange?: number;
   completedAt: string;
   feedback: any;
   interview: {
@@ -125,6 +126,13 @@ const InterviewResults = () => {
             <div className="grade-badge" style={{ borderColor: getScoreColor(result.score || 0) }}>
               {result.score !== null ? getScoreGrade(result.score) : "N/A"}
             </div>
+            {result.eloChange != null && result.eloChange !== 0 && (
+              <div
+                className={`elo-change-badge ${result.eloChange > 0 ? "elo-positive" : "elo-negative"}`}
+              >
+                {result.eloChange > 0 ? "+" : ""}{result.eloChange} ELO
+              </div>
+            )}
           </div>
 
           <div className="interview-details">

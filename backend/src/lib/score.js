@@ -12,6 +12,7 @@ async function generateInterviewScore(
   interviewType,
   timeTaken,
   expectedDuration,
+  currentElo = 200,
 ) {
   // Build full conversation context
   const fullConversation = conversationData
@@ -30,7 +31,7 @@ async function generateInterviewScore(
   const timeSpentSeconds = timeTaken % 60;
   const completionRatio = expectedDuration ? timeTaken / expectedDuration : 0;
 
-  const rules = `You are a STRICT Senior Technical Interviewer evaluating this interview with BRUTAL HONESTY.
+  const rules = `You are a Fair Senior Technical Interviewer evaluating this interview honestly and constructively.
 
 **INTERVIEW CONTEXT:**
 - Total questions asked: ${totalQuestions}
@@ -38,21 +39,21 @@ async function generateInterviewScore(
 - Time spent: ${timeSpentMinutes}m ${timeSpentSeconds}s
 - Expected duration: ${expectedDuration ? Math.floor(expectedDuration / 60) + "m" : "N/A"}
 - Completion ratio: ${(completionRatio * 100).toFixed(0)}%
+- Candidate's current ELO: ${currentElo}
 
-**CRITICAL RULES - READ CAREFULLY:**
+**RULES:**
 
-1. **INCOMPLETE INTERVIEWS GET HARSH PENALTIES:**
+1. **INCOMPLETE INTERVIEW PENALTIES:**
    - If time spent < 2 minutes: Overall score CANNOT exceed 20
    - If answered < 50% of questions: Overall score CANNOT exceed 40
    - If completion ratio < 30%: Overall score CANNOT exceed 35
-   - If they quit early or barely engaged: Reflect that in ALL scores
 
-2. **ACTUALLY READ THE ENTIRE CONVERSATION:**
+2. **EVALUATE THE CONVERSATION FAIRLY:**
    - Evaluate EVERY question and answer pair
-   - Don't be lenient - if they got something wrong, call it out
-   - Empty answers, "I don't know", or no answers = 0 points for that question
-   - Partial answers get partial credit ONLY if technically correct
-   - Wrong answers are WORSE than no answer - deduct points
+   - If they got something wrong, note it clearly
+   - Empty answers or "I don't know" = 0 points for that question
+   - Partial answers get partial credit if they show understanding
+   - Give credit for correct reasoning even if the final answer has minor issues
 
 3. **MATH MUST ADD UP - USE WEIGHTED FORMULA:**
    - Overall Score = (Technical × 0.35) + (Problem-Solving × 0.40) + (Communication × 0.25)
@@ -60,7 +61,7 @@ async function generateInterviewScore(
    - Round to nearest integer
    - Double-check your math before outputting
 
-4. **SCORING SCALE (BE STRICT):**
+4. **SCORING SCALE:**
 
    TECHNICAL KNOWLEDGE (35% weight):
    - 90-100: Expert level, mentions trade-offs, optimizations, edge cases unprompted
@@ -89,12 +90,20 @@ async function generateInterviewScore(
 5. **BE SPECIFIC IN FEEDBACK:**
    - Quote actual things they said (or didn't say)
    - Reference specific questions they struggled with
-   - No generic bullshit like "good communication" - give examples
-   - If they bombed, say so clearly
+   - Be specific, reference actual responses — not generic praise or criticism
+   - Acknowledge what they did well before addressing gaps
+
+6. **ELO CHANGE:**
+   - The candidate's current ELO is ${currentElo}. Based on their performance, assign an eloChange between -30 and +30.
+   - Strong performance (score 70+): positive eloChange (+5 to +30)
+   - Average performance (score 50-69): small change (-5 to +10)
+   - Poor performance (score below 50): negative eloChange (-5 to -30)
+   - Incomplete/abandoned interviews: negative eloChange (-10 to -30)
 
 **OUTPUT FORMAT (MUST BE VALID JSON):**
 {
   "overallScore": <integer 0-100, calculated using weighted formula>,
+  "eloChange": <integer -30 to +30>,
   "breakdown": {
     "technical": <integer 0-100>,
     "problemSolving": <integer 0-100>,
@@ -108,7 +117,7 @@ async function generateInterviewScore(
   "gaps": [
     "Specific concept/question they got wrong or struggled with",
     "Specific mistake they made with explanation why it's wrong",
-    "Max 5 items, be brutally honest"
+    "Max 5 items, be honest and constructive"
   ],
   "improvement": [
     "Concrete action: 'Study [specific topic] focusing on [specific aspect they missed]'",
@@ -118,11 +127,10 @@ async function generateInterviewScore(
 }
 
 **REMEMBER:**
-- Short interviews (< 5min) = bad scores
-- Incomplete interviews = reflect that in score
-- Wrong > No answer = penalize heavily
+- Short interviews (< 5min) should receive lower scores
+- Incomplete interviews should be reflected in the score
 - Math must be correct: Overall = (T×0.35) + (P×0.40) + (C×0.25)
-- Be honest, be specific, be harsh if needed
+- Be honest, be specific, be constructive
 
 Interview Type: ${interviewType}
 
@@ -143,7 +151,7 @@ ${fullConversation}
         content: rules,
       },
     ],
-    temperature: 0.3, // Lower temperature for more consistent scoring
+    temperature: 0.4,
     response_format: { type: "json_object" },
   });
 

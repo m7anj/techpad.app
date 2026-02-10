@@ -28,6 +28,7 @@ export const getCompletedInterviewsByUserId = async (req, res) => {
       duration: interview.timeTaken,
       score: interview.score,
       feedback: interview.feedback,
+      eloChange: interview.eloChange,
     }));
 
     res.status(200).json({ interviews: formattedInterviews });
@@ -66,6 +67,7 @@ export const addCompletedInterview = async (
   timeTaken,
   score,
   feedback,
+  eloChange,
 ) => {
   try {
     // Directly use clerkUserId - no user lookup needed
@@ -76,6 +78,7 @@ export const addCompletedInterview = async (
       timeTaken,
       score,
       feedback,
+      eloChange,
     );
     return result;
   } catch (error) {
